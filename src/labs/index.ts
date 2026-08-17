@@ -1,6 +1,7 @@
 import type { ExperimentConfig, MistakeRule, Checkpoint } from './types';
 import { hookesLawConfig } from './physics/hookesLaw';
 import { simplePendulumConfig } from './physics/simplePendulum';
+import { torqueEquilibriumConfig } from './physics/torqueEquilibrium';
 import { ohmsLawConfig } from './physics/ohmsLaw';
 import { freeFallConfig } from './physics/freeFall';
 import { specificHeatConfig } from './physics/specificHeat';
@@ -22,6 +23,10 @@ import { calorimetryConfig } from './chemistry/calorimetry';
 import { electrochemistryConfig } from './chemistry/electrochemistry';
 import { phCurvesConfig } from './chemistry/phCurves';
 import { chromatographyConfig, metalActivityConfig } from './chemistry/chemistryCatalogue';
+import { waterHardnessEdtaConfig } from './chemistry/waterHardnessEdta';
+import { winklerDissolvedOxygenConfig } from './chemistry/winklerDissolvedOxygen';
+import { leadAcidStrengthConfig } from './chemistry/leadAcidStrength';
+import { ferrousDichromateConfig } from './chemistry/ferrousDichromate';
 
 export * from './types';
 export * from './smartboardTriggers';
@@ -38,8 +43,11 @@ export const EXPERIMENT_REGISTRY: Record<string, ExperimentConfig> = {
   'momentum-collisions': momentumConfig,
   'conservation-of-energy': energyConfig,
   'energy-conservation': energyConfig,
-  'torque-equilibrium': torqueConfig,
-  'torque': torqueConfig,
+  'torque-equilibrium': torqueEquilibriumConfig,
+  'torque-rotational-equilibrium': torqueEquilibriumConfig,
+  'rotational-equilibrium': torqueEquilibriumConfig,
+  'torque-lab': torqueEquilibriumConfig,
+  'torque': torqueEquilibriumConfig,
   'centripetal-force': centripetalConfig,
   'centripetal': centripetalConfig,
   'hookes-law': hookesLawConfig,
@@ -54,6 +62,18 @@ export const EXPERIMENT_REGISTRY: Record<string, ExperimentConfig> = {
   'convex-lens': convexLensConfig,
 
   // Main Chemistry Labs
+  'ferrous-iron-dichromate': ferrousDichromateConfig,
+  'ferrous-dichromate': ferrousDichromateConfig,
+  'iron-dichromate-titration': ferrousDichromateConfig,
+  'lead-acid-strength': leadAcidStrengthConfig,
+  'battery-acid-strength': leadAcidStrengthConfig,
+  'lead-acid-battery': leadAcidStrengthConfig,
+  'dissolved-oxygen-winkler': winklerDissolvedOxygenConfig,
+  'dissolved-oxygen': winklerDissolvedOxygenConfig,
+  'winkler-method': winklerDissolvedOxygenConfig,
+  'water-hardness-edta': waterHardnessEdtaConfig,
+  'water-hardness': waterHardnessEdtaConfig,
+  'edta-titration': waterHardnessEdtaConfig,
   'acid-base-titration': titrationConfig,
   'reaction-rates': reactionRatesConfig,
   'enthalpy-calorimetry': calorimetryConfig,

@@ -17,8 +17,13 @@ import { ProjectileLab } from './experiments/ProjectileLab';
 import { MomentumLab } from './experiments/MomentumLab';
 import { EnergyLab } from './experiments/EnergyLab';
 import { TorqueLab } from './experiments/TorqueLab';
+import { TorqueRotationalEquilibriumLab } from './experiments/TorqueRotationalEquilibriumLab';
 import { CentripetalLab } from './experiments/CentripetalLab';
 import { ConvexLensLab } from './experiments/ConvexLensLab';
+import { WaterHardnessEdtaLab } from './experiments/WaterHardnessEdtaLab';
+import { WinklerDissolvedOxygenLab } from './experiments/WinklerDissolvedOxygenLab';
+import { LeadAcidStrengthLab } from './experiments/LeadAcidStrengthLab';
+import { FerrousIronDichromateLab } from './experiments/FerrousIronDichromateLab';
 import { ComingSoonLab } from './experiments/ComingSoonLab';
 
 export interface ExperimentRendererProps {
@@ -45,8 +50,14 @@ const experimentRendererRegistry: Record<string, React.ComponentType<any>> = {
   'refraction-snell': ConvexLensLab,
   'conservation-of-energy': EnergyLab,
   'energy-conservation': EnergyLab,
-  'torque-equilibrium': TorqueLab,
-  'torque': TorqueLab,
+  'conservation-of-mechanical-energy': EnergyLab,
+  'mechanical-energy': EnergyLab,
+  'energy-lab': EnergyLab,
+  'torque-equilibrium': TorqueRotationalEquilibriumLab,
+  'torque-rotational-equilibrium': TorqueRotationalEquilibriumLab,
+  'rotational-equilibrium': TorqueRotationalEquilibriumLab,
+  'torque-lab': TorqueRotationalEquilibriumLab,
+  'torque': TorqueRotationalEquilibriumLab,
   'centripetal-force': CentripetalLab,
   'centripetal': CentripetalLab,
   'hookes-law': HookesLawLab,
@@ -57,6 +68,18 @@ const experimentRendererRegistry: Record<string, React.ComponentType<any>> = {
   'specific-heat': SpecificHeatLab,
 
   // Chemistry Labs
+  'ferrous-iron-dichromate': FerrousIronDichromateLab,
+  'ferrous-dichromate': FerrousIronDichromateLab,
+  'iron-dichromate-titration': FerrousIronDichromateLab,
+  'lead-acid-strength': LeadAcidStrengthLab,
+  'battery-acid-strength': LeadAcidStrengthLab,
+  'lead-acid-battery': LeadAcidStrengthLab,
+  'dissolved-oxygen-winkler': WinklerDissolvedOxygenLab,
+  'dissolved-oxygen': WinklerDissolvedOxygenLab,
+  'winkler-method': WinklerDissolvedOxygenLab,
+  'water-hardness-edta': WaterHardnessEdtaLab,
+  'water-hardness': WaterHardnessEdtaLab,
+  'edta-titration': WaterHardnessEdtaLab,
   'acid-base-titration': AcidBaseTitrationLab,
   'reaction-rates': ReactionRatesLab,
   'calorimetry': CalorimetryLab,

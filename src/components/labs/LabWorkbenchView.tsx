@@ -155,7 +155,31 @@ export const LabWorkbenchView: React.FC = () => {
     config.id === 'momentum-collisions' ||
     config.id === 'convex-lens' ||
     config.id === 'convex-lens-focal' ||
-    config.id === 'refraction-snell'
+    config.id === 'refraction-snell' ||
+    config.id === 'simple-pendulum' ||
+    config.id === 'pendulum-lab' ||
+    config.id === 'conservation-of-energy' ||
+    config.id === 'energy-conservation' ||
+    config.id === 'conservation-of-mechanical-energy' ||
+    config.id === 'mechanical-energy' ||
+    config.id === 'energy-lab' ||
+    config.id === 'torque-equilibrium' ||
+    config.id === 'torque-rotational-equilibrium' ||
+    config.id === 'rotational-equilibrium' ||
+    config.id === 'torque-lab' ||
+    config.id === 'torque' ||
+    config.id === 'water-hardness-edta' ||
+    config.id === 'water-hardness' ||
+    config.id === 'edta-titration' ||
+    config.id === 'dissolved-oxygen-winkler' ||
+    config.id === 'dissolved-oxygen' ||
+    config.id === 'winkler-method' ||
+    config.id === 'lead-acid-strength' ||
+    config.id === 'battery-acid-strength' ||
+    config.id === 'lead-acid-battery' ||
+    config.id === 'ferrous-iron-dichromate' ||
+    config.id === 'ferrous-dichromate' ||
+    config.id === 'iron-dichromate-titration'
   ) {
     return (
       <AnimatePresence>
