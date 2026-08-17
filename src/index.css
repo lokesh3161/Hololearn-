@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-inter: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  
+  body {
+    font-family: var(--font-inter);
+    background-color: #000000;
+    color: #ffffff;
+    user-select: none;
+    overflow: hidden;
+  }
+}
+
+/* Custom Utilities for Visual Identity */
+.glass-panel {
+  background: rgba(15, 15, 15, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+}
+
+.glass-panel-elevated {
+  background: rgba(22, 22, 22, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.ai-glow {
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.35), 0 0 30px rgba(255, 255, 255, 0.15);
+}
+
+.ai-glow-pulse {
+  animation: aiPulse 2.5s infinite ease-in-out;
+}
+
+@keyframes aiPulse {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.25), 0 0 25px rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(255, 255, 255, 0.5), 0 0 45px rgba(255, 255, 255, 0.25);
+  }
+}
+
+.ai-text-glow {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* KaTeX tweaks */
+.katex {
+  font-size: 1.1em;
+  color: #ffffff !important;
+}
+
+/* Dots pulse for AI status */
+.dots-loader span {
+  animation: dotsPulse 1.4s infinite ease-in-out both;
+}
+.dots-loader span:nth-child(1) { animation-delay: -0.32s; }
+.dots-loader span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes dotsPulse {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
