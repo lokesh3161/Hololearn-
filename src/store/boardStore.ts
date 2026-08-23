@@ -17,7 +17,9 @@ interface BoardState {
   selectedIds: string[];
   activeTool: ToolType;
   activeShape: ShapeSubtype;
+  strokeColor: string;
   strokeWidth: number;
+  eraserSize: number;
   opacity: number;
   transform: { x: number; y: number; zoom: number };
   showGrid: boolean;
@@ -83,7 +85,9 @@ interface BoardState {
   // Actions
   setTool: (tool: ToolType) => void;
   setShape: (shape: ShapeSubtype) => void;
+  setStrokeColor: (color: string) => void;
   setStrokeWidth: (width: number) => void;
+  setEraserSize: (size: number) => void;
   setTransform: (transform: Partial<{ x: number; y: number; zoom: number }>) => void;
   setZoom: (zoom: number) => void;
   toggleGrid: () => void;
@@ -120,10 +124,18 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   selectedIds: [],
   activeTool: 'pen',
   activeShape: 'circle',
-  strokeWidth: 3,
+  strokeColor: '#ffffff',
+  strokeWidth: 3.5,
+  eraserSize: 28,
   opacity: 1,
   transform: { x: 0, y: 0, zoom: 1 },
   showGrid: true,
+
+  setTool: (activeTool) => set({ activeTool }),
+  setShape: (activeShape) => set({ activeShape }),
+  setStrokeColor: (strokeColor) => set({ strokeColor }),
+  setStrokeWidth: (strokeWidth) => set({ strokeWidth }),
+  setEraserSize: (eraserSize) => set({ eraserSize }),
 
   activeSubject: 'chemistry',
   setActiveSubject: (activeSubject) => set({ activeSubject }),
@@ -227,9 +239,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }
   },
 
-  setTool: (activeTool) => set({ activeTool }),
-  setShape: (activeShape) => set({ activeShape, activeTool: 'shape' }),
-  setStrokeWidth: (strokeWidth) => set({ strokeWidth }),
   setTransform: (patch) =>
     set((state) => ({ transform: { ...state.transform, ...patch } })),
   setZoom: (zoom) =>

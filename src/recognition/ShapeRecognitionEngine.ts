@@ -1,165 +1,156 @@
-export interface Point {
-  x: number;
-  y: number;
-  time?: number;
-}
-
-export type DetectedShape =
-  | { type: 'circle'; center: Point; radius: number }
-  | { type: 'triangle'; vertices: [Point, Point, Point]; is3DTarget: 'cone' | 'triangular_prism' | 'tetrahedron' }
-  | { type: 'rectangle'; bounds: { x: number; y: number; width: number; height: number }; is3DTarget: 'cube' | 'cuboid' }
-  | { type: 'line'; start: Point; end: Point };
+import type {
+  Point,
+  RecognitionResult,
+  ShapeCandidate,
+  SemanticShapeObject,
+  ConversionResult,
+} from './types';
+import { RECOGNITION_CONFIG } from './types';
+import { FeatureExtractor } from './FeatureExtractor';
+import { GeometryClassifier } from './GeometryClassifier';
+import { ShapeConverter } from './ShapeConverter';
 
 export class ShapeRecognitionEngine {
-  public static analyzeStrokes(strokes: Point[][]): DetectedShape | null {
-    const flatPoints = strokes.flat();
-    if (flatPoints.length < 5) return null;
+  private classifier = new GeometryClassifier();
+  private converter = new ShapeConverter();
+  private cache = new Map<string, RecognitionResult>();
 
-    // 1. Calculate Bounding Box
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    flatPoints.forEach((p) => {
-      if (p.x < minX) minX = p.x;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.y > maxY) maxY = p.y;
-    });
-    const width = maxX - minX;
-    const height = maxY - minY;
+  public recognizeSync(strokeObj: any, _context?: any): RecognitionResult {
+    const start = performance.now();
+    const rawPoints: Point[] = strokeObj?.points || (Array.isArray(strokeObj) ? strokeObj : []);
+    const sourceObjectId = strokeObj?.id || `stroke-${Date.now()}`;
 
-    // 2. Corner detection using directional change
-    const corners = this.detectCorners(flatPoints);
+    if (this.cache.has(sourceObjectId)) {
+      return this.cache.get(sourceObjectId)!;
+    }
 
-    // 3. Classify Shape
-    if (corners.length === 3) {
-      return {
-        type: 'triangle',
-        vertices: [corners[0], corners[1], corners[2]],
-        is3DTarget: 'triangular_prism',
+    // Step 1: Feature Extraction & Metrics Computation
+    const { metrics, features } = FeatureExtractor.extract(rawPoints);
+
+    // Step 2: Scale & Dimension Validation
+    if (
+      metrics.pointCount < RECOGNITION_CONFIG.MIN_POINTS ||
+      metrics.diagonal < RECOGNITION_CONFIG.MIN_DIAGONAL ||
+      metrics.totalLength < 18
+    ) {
+      const emptyResult: RecognitionResult = {
+        status: 'rejected',
+        strokeId: sourceObjectId,
+        sourceObjectId,
+        rawPoints,
+        metrics,
+        candidates: [],
+        bestCandidate: null,
+        secondBestCandidate: null,
+        best: null,
+        confidenceMargin: 0,
+        features,
+        processingTimeMs: performance.now() - start,
+        timestamp: Date.now(),
+        reason: 'Stroke dimensions or point count below minimum thresholds',
       };
+      this.cache.set(sourceObjectId, emptyResult);
+      return emptyResult;
     }
 
-    if (corners.length === 4) {
-      return {
-        type: 'rectangle',
-        bounds: { x: minX, y: minY, width, height },
-        is3DTarget: 'cube',
-      };
+    // Step 3: Run Hierarchical Geometry Classifier
+    const candidates = this.classifier.classifyAll(metrics);
+
+    const bestCandidate = candidates[0] || null;
+    const secondBestCandidate = candidates[1] || null;
+    const confidenceMargin = bestCandidate
+      ? bestCandidate.confidence - (secondBestCandidate ? secondBestCandidate.confidence : 0)
+      : 0;
+
+    // Step 4: Decision Logic (Precision > Recall)
+    let status: 'recognized' | 'uncertain' | 'rejected' = 'rejected';
+    let reason = '';
+
+    if (!bestCandidate) {
+      status = 'rejected';
+      reason = 'No valid geometric shape candidate found';
+    } else if (
+      bestCandidate.confidence >= RECOGNITION_CONFIG.MIN_CONFIDENCE &&
+      confidenceMargin >= RECOGNITION_CONFIG.MIN_CONFIDENCE_MARGIN
+    ) {
+      status = 'recognized';
+      reason = `Recognized ${bestCandidate.type} with ${Math.round(bestCandidate.confidence * 100)}% confidence and ${Math.round(confidenceMargin * 100)}% margin`;
+    } else if (bestCandidate.confidence >= 0.50) {
+      status = 'uncertain';
+      reason = `Candidate ${bestCandidate.type} score (${Math.round(bestCandidate.confidence * 100)}%) or margin (${Math.round(confidenceMargin * 100)}%) is ambiguous`;
+    } else {
+      status = 'rejected';
+      reason = `Top candidate score (${Math.round(bestCandidate.confidence * 100)}%) below absolute minimum threshold`;
     }
 
-    // Circularity Check: Area / Perimeter Ratio
-    const startPoint = flatPoints[0];
-    const endPoint = flatPoints[flatPoints.length - 1];
-    const isClosed = Math.hypot(startPoint.x - endPoint.x, startPoint.y - endPoint.y) < width * 0.35;
-
-    if (isClosed && Math.abs(width - height) < width * 0.4) {
-      return {
-        type: 'circle',
-        center: { x: minX + width / 2, y: minY + height / 2 },
-        radius: (width + height) / 4,
-      };
-    }
-
-    return {
-      type: 'circle',
-      center: { x: minX + width / 2, y: minY + height / 2 },
-      radius: (width + height) / 4,
-    };
-  }
-
-  private static detectCorners(points: Point[]): Point[] {
-    const corners: Point[] = [];
-    const step = 3;
-    for (let i = step; i < points.length - step; i += step) {
-      const prev = points[i - step];
-      const curr = points[i];
-      const next = points[i + step];
-
-      const angle1 = Math.atan2(curr.y - prev.y, curr.x - prev.x);
-      const angle2 = Math.atan2(next.y - curr.y, next.x - curr.x);
-      let diff = Math.abs(angle1 - angle2);
-      if (diff > Math.PI) diff = 2 * Math.PI - diff;
-
-      // Acute / sharp directional bend threshold
-      if (diff > 0.75 && diff < 2.5) {
-        if (
-          corners.length === 0 ||
-          Math.hypot(curr.x - corners[corners.length - 1].x, curr.y - corners[corners.length - 1].y) > 25
-        ) {
-          corners.push(curr);
-        }
-      }
-    }
-    return corners;
-  }
-
-  // Instance methods for auto-shape conversion compatibility
-  public recognizeSync(strokeObj: any, _context?: any): any {
-    const points: Point[] = strokeObj?.points || [];
-    const detected = ShapeRecognitionEngine.analyzeStrokes([points]);
-
-    let recognizedType = 'circle';
-    if (detected) {
-      if (detected.type === 'circle') recognizedType = 'circle';
-      else if (detected.type === 'triangle') recognizedType = 'triangle';
-      else if (detected.type === 'rectangle') recognizedType = 'rectangle';
-      else if (detected.type === 'line') recognizedType = 'line';
-    }
-
-    const bbox = strokeObj?.x !== undefined
-      ? {
-          x: strokeObj.x,
-          y: strokeObj.y,
-          width: strokeObj.width || 100,
-          height: strokeObj.height || 100,
-        }
-      : { x: 100, y: 100, width: 100, height: 100 };
-
-    const bestCandidate = {
-      type: recognizedType,
-      confidence: 0.94,
-      is3DTarget: (detected as any)?.is3DTarget,
-      geometry: {
-        type: recognizedType,
-        centerX: bbox.x + bbox.width / 2,
-        centerY: bbox.y + bbox.height / 2,
-        radius: (bbox.width + bbox.height) / 4,
-        x: bbox.x,
-        y: bbox.y,
-        width: bbox.width,
-        height: bbox.height,
-        p1: { x: bbox.x, y: bbox.y + bbox.height },
-        p2: { x: bbox.x + bbox.width / 2, y: bbox.y },
-        p3: { x: bbox.x + bbox.width, y: bbox.y + bbox.height },
-      },
-    };
-
-    return {
+    const result: RecognitionResult = {
+      status,
+      strokeId: sourceObjectId,
+      sourceObjectId,
+      rawPoints,
+      metrics,
+      candidates,
       bestCandidate,
-      best: bestCandidate,
-      recognizedType,
-      confidence: 0.94,
-      metrics: {
-        boundingBox: bbox,
-      },
+      secondBestCandidate,
+      best: status === 'recognized' ? bestCandidate : null,
+      confidenceMargin,
+      features,
+      processingTimeMs: performance.now() - start,
+      timestamp: Date.now(),
+      reason,
     };
+
+    this.cache.set(sourceObjectId, result);
+    return result;
   }
 
-  public convert(strokeObj: any, result?: any): any {
-    const candidate = result?.bestCandidate || result?.best || strokeObj?.bestCandidate;
-    const candidateType = candidate?.type || 'circle';
+  public async recognize(strokeObj: any): Promise<RecognitionResult> {
+    return this.recognizeSync(strokeObj);
+  }
+
+  public convert(strokeObj: any, resultParam?: RecognitionResult): ConversionResult {
+    const result = resultParam || this.recognizeSync(strokeObj);
+    const candidate = result?.bestCandidate || result?.best;
+
+    if (!candidate || result.status !== 'recognized') {
+      return {
+        success: false,
+        originalStrokeId: strokeObj?.id || '',
+        convertedObject: null,
+      };
+    }
+
+    const converted: SemanticShapeObject = {
+      id: `shape_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      sourceObjectId: result.sourceObjectId,
+      type: candidate.type,
+      shapeSubtype: candidate.type === 'square' ? 'rectangle' : candidate.type,
+      geometry: candidate.geometry,
+      metadata: {
+        convertedFrom: 'freehand',
+        originalPoints: result.rawPoints,
+        confidence: candidate.confidence,
+        convertedAt: Date.now(),
+      },
+    };
 
     return {
       success: true,
-      convertedObject: {
-        id: `converted-${Date.now()}`,
-        type: candidateType,
-        shapeSubtype: candidateType === 'rectangle' ? 'rectangle' : candidateType === 'triangle' ? 'triangle' : 'circle',
-        points: strokeObj?.points || [],
-      },
+      originalStrokeId: result.sourceObjectId,
+      convertedObject: converted,
     };
   }
 
-  public processStroke(points: Point[]) {
-    return this.recognizeSync({ points });
+  public clearCache(strokeId?: string): void {
+    if (strokeId) this.cache.delete(strokeId);
+    else this.cache.clear();
+  }
+
+  // Static helper for backward compatibility
+  public static analyzeStrokes(strokes: Point[][]): any {
+    const flatPoints = strokes.flat();
+    const engine = new ShapeRecognitionEngine();
+    const res = engine.recognizeSync({ points: flatPoints });
+    return res.bestCandidate ? { type: res.bestCandidate.type, confidence: res.bestCandidate.confidence } : null;
   }
 }

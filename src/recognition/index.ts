@@ -1,8 +1,13 @@
 export * from './types';
 export * from './utils';
+export * from './StrokePreprocessor';
+export * from './StrokeResampler';
+export * from './CornerDetector';
+export * from './FeatureExtractor';
 export * from './StrokeAnalyzer';
 export * from './GeometryClassifier';
 export * from './ConfidenceCalculator';
 export * from './ShapeConverter';
-export { ShapeRecognitionEngine, type DetectedShape } from './ShapeRecognitionEngine';
+export { ShapeRecognitionEngine } from './ShapeRecognitionEngine';
 export * from './LongPressDetector';
+export * from './RecognitionDebugger';

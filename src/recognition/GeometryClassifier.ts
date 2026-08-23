@@ -8,6 +8,7 @@ import type {
   BoundingBox,
 } from './types';
 import { clamp, pct, noMatch, dist } from './utils';
+import { CornerDetector } from './CornerDetector';
 
 export class GeometryClassifier {
   classifyAll(metrics: StrokeMetrics): ShapeCandidate[] {
@@ -68,15 +69,12 @@ export class GeometryClassifier {
 
     // Rule 2 — Rectangle vs Triangle
     if (rectangle && triangle && rectangle.confidence > 0.3 && triangle.confidence > 0.3) {
-      const corners = this.findCornersRobust(m.points);
-      const merged = this.mergeNearbyCorners(corners, m.diagonal * 0.1);
-      const rCorner = this.cornerProximityRatio(m);
-
-      if (merged.length === 3 || (merged.length >= 3 && rCorner > 0.13)) {
-        triangle.confidence = Math.max(triangle.confidence, 0.85);
+      const corners = CornerDetector.detectCorners(m.points, m.diagonal);
+      if (corners.length === 3) {
+        triangle.confidence = Math.max(triangle.confidence, 0.90);
         rectangle.confidence = 0;
         if (polygon) polygon.confidence = 0;
-      } else if (merged.length >= 4 && rCorner <= 0.12) {
+      } else if (corners.length >= 4) {
         rectangle.confidence = Math.max(rectangle.confidence, 0.92);
         triangle.confidence = 0;
         if (polygon) polygon.confidence = 0;
@@ -247,11 +245,8 @@ export class GeometryClassifier {
   classifyRectangle(m: StrokeMetrics): ShapeCandidate {
     if (!m.isClosed || m.diagonal < 20) return noMatch('rectangle');
 
-    const rCorner = this.cornerProximityRatio(m);
-    if (rCorner > 0.14) return noMatch('rectangle');
-
-    const corners = this.findCornersRobust(m.points);
-    const merged = this.mergeNearbyCorners(corners, m.diagonal * 0.1);
+    const corners = CornerDetector.detectCorners(m.points, m.diagonal);
+    const merged = corners.length > 0 ? corners : this.findCornersRobust(m.points);
 
     let rectCorners: Point[];
     if (merged.length === 4) {
@@ -300,7 +295,7 @@ export class GeometryClassifier {
         closureScore * 0.1) * cornerBonus
     );
 
-    if (m.isClosed && rCorner < 0.12) {
+    if (m.isClosed && (merged.length === 4 || corners.length === 4)) {
       confidence = Math.max(confidence, 0.92);
     }
 
@@ -333,10 +328,8 @@ export class GeometryClassifier {
   classifyTriangle(m: StrokeMetrics): ShapeCandidate {
     if (!m.isClosed || m.diagonal < 20) return noMatch('triangle');
 
-    const corners = this.findCornersRobust(m.points);
-    if (corners.length < 3) return noMatch('triangle');
-
-    const merged = this.mergeNearbyCorners(corners, m.diagonal * 0.1);
+    const corners = CornerDetector.detectCorners(m.points, m.diagonal);
+    const merged = corners.length > 0 ? corners : this.findCornersRobust(m.points);
 
     if (merged.length < 3 || merged.length > 5) {
       return noMatch('triangle');
@@ -382,8 +375,8 @@ export class GeometryClassifier {
         cornerScore * 0.2
     );
 
-    if (m.isClosed && corners.length >= 3) {
-      confidence = Math.max(confidence, 0.75);
+    if (m.isClosed && (merged.length === 3 || corners.length === 3)) {
+      confidence = Math.max(confidence, 0.88);
     }
 
     return {
