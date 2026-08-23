@@ -4,49 +4,63 @@ export const hookesLawConfig: ExperimentConfig = {
   id: 'hookes-law',
   title: "Hooke's Law & Spring Constant Determination",
   subject: 'physics',
-  objective: "Verify Hooke's Law (F = kx) and determine the spring constant k of a helical spring.",
+  objective: "Verify Hooke's Law (F = kx) and experimentally determine the spring constant k within the elastic limit.",
   apparatus: [
-    { id: 'stand', name: 'Clamp Stand & Boss Head', specs: 'Heavy steel base, 60cm vertical rod', instructions: 'Mount securely on bench top.' },
-    { id: 'spring', name: 'Steel Helical Spring', specs: 'k = 25.0 N/m, Elastic Limit = 350g (3.43N)', instructions: 'Suspend from clamp arm.' },
-    { id: 'hanger', name: 'Mass Hanger', specs: '50g base hanger with pointer', instructions: 'Hook onto bottom of spring.' },
-    { id: 'masses', name: 'Slotted Masses Set', specs: '5 x 50g lead weights (±0.1g)', instructions: 'Add sequentially to mass hanger.' },
-    { id: 'ruler', name: 'Meter Scale', specs: '100cm length, 1mm graduation precision', instructions: 'Position vertically beside pointer.' },
+    { id: 'stand', name: 'Heavy Laboratory Stand', specs: 'Rigid cast-iron base with 80cm vertical support rod', instructions: 'Position securely on horizontal workbench.' },
+    { id: 'spring', name: 'Helical Steel Spring Set', specs: 'Standard (25 N/m), Soft (15 N/m), Stiff (50 N/m), Unknown', instructions: 'Suspend from upper support clamp.' },
+    { id: 'hanger', name: 'Mass Hanger & Pointer', specs: '50g base hanger with precision alignment pointer', instructions: 'Hook onto lower spring loop.' },
+    { id: 'masses', name: 'Precision Slotted Mass Set', specs: 'Slotted weights (10g, 20g, 50g, 100g) ±0.05g accuracy', instructions: 'Place weights onto hanger stem.' },
+    { id: 'ruler', name: 'Vertical Millimeter Scale', specs: '60cm scale with 1mm graduations and zero baseline marker', instructions: 'Align scale parallel to spring and pointer.' },
+    { id: 'sensor', name: 'Digital Force Sensor', specs: '0–20 N strain-gauge sensor (±0.001 N)', instructions: 'Mounted at upper clamp arm.' },
   ],
   procedure: [
-    { stepNumber: 1, instruction: 'Record the natural un-loaded length of the spring (L₀ = 15.0 cm).', expectedAction: 'Zero pointer against ruler.' },
-    { stepNumber: 2, instruction: 'Attach 50g mass to the hanger and wait for oscillations to dampen (equilibrium).', expectedAction: 'Record new pointer position L.' },
-    { stepNumber: 3, instruction: 'Calculate extension x = L - L₀ in meters.', expectedAction: 'Compute x in cm and convert to m.' },
-    { stepNumber: 4, instruction: 'Repeat for loads 100g, 150g, 200g, 250g, and 300g.', expectedAction: 'Record total mass, force F = m*g, and length.' },
-    { stepNumber: 5, instruction: 'Plot Force F (N) on y-axis vs Extension x (m) on x-axis.', expectedAction: 'Fit straight line through origin.' },
-    { stepNumber: 6, instruction: 'Determine spring constant k from gradient of best-fit line.', expectedAction: 'k = ΔF / Δx.' },
+    { stepNumber: 1, instruction: 'Measure natural un-loaded spring length L₀ with 0g additional load.', expectedAction: 'Record baseline pointer position.' },
+    { stepNumber: 2, instruction: 'Attach mass hanger (50g base mass) to bottom spring hook.', expectedAction: 'Observe initial equilibrium stretch.' },
+    { stepNumber: 3, instruction: 'Add a known slotted mass (e.g. 50g) to the hanger.', expectedAction: 'Load weight onto hanger.' },
+    { stepNumber: 4, instruction: 'Allow spring oscillations to dampen completely until equilibrium is reached.', expectedAction: 'Wait for status to show EQUILIBRIUM.' },
+    { stepNumber: 5, instruction: 'Measure extended spring length L on the vertical millimeter ruler scale.', expectedAction: 'Read ruler position at pointer tip.' },
+    { stepNumber: 6, instruction: 'Calculate extension x = L - L₀ in meters.', expectedAction: 'Compute extension in meters.' },
+    { stepNumber: 7, instruction: 'Calculate total applied force F = m · g (where g = 9.81 m/s²).', expectedAction: 'Compute force in Newtons.' },
+    { stepNumber: 8, instruction: 'Record data point into observation table.', expectedAction: 'Click Record Trial button.' },
+    { stepNumber: 9, instruction: 'Repeat measurement steps for at least 5 different mass loads.', expectedAction: 'Collect multi-point trial dataset.' },
+    { stepNumber: 10, instruction: 'Plot Force F (N) on y-axis against Extension x (m) on x-axis.', expectedAction: 'Open Force vs Extension Graph tab.' },
+    { stepNumber: 11, instruction: 'Fit linear regression line through elastic region data points.', expectedAction: 'Analyze slope of best-fit line.' },
+    { stepNumber: 12, instruction: 'Determine spring constant k from slope (k = ΔF / Δx).', expectedAction: 'Record calculated spring constant k.' },
+    { stepNumber: 13, instruction: 'Gradually increase mass beyond elastic limit to observe non-linear deformation.', expectedAction: 'Observe elastic limit warning.' },
+    { stepNumber: 14, instruction: 'Formulate conclusion comparing experimental k to theoretical values.', expectedAction: 'Generate and review Lab Report.' },
   ],
   stateEngine: {
-    constants: { g: 9.81, kNominal: 25.0, naturalLengthCm: 15.0, elasticLimitGrams: 350.0 },
+    constants: { g: 9.81, kNominal: 25.0, naturalLengthCm: 20.0, elasticLimitGrams: 350.0 },
     calculateState: (inputs: Record<string, any>) => {
       const massGrams = Number(inputs.massGrams || 0);
+      const k = Number(inputs.springK || 25.0);
+      const naturalLengthCm = Number(inputs.naturalLengthCm || 20.0);
+      const elasticLimitGrams = Number(inputs.elasticLimitGrams || 350.0);
       const isEquilibrium = inputs.isEquilibrium !== false;
       const g = 9.81;
-      const k = 25.0;
-      const naturalLengthCm = 15.0;
-      const forceN = (massGrams / 1000.0) * g;
-      const isDeformed = massGrams > 350.0;
 
-      let extensionCm = (forceN / k) * 100.0;
+      const forceN = (massGrams / 1000.0) * g;
+      const elasticLimitForceN = (elasticLimitGrams / 1000.0) * g;
+      const isDeformed = forceN > elasticLimitForceN;
+
+      let extensionM = forceN / k;
       if (isDeformed) {
-        // Permanent plastic deformation model
-        const overloadGrams = massGrams - 350.0;
-        extensionCm += (overloadGrams / 10.0) * 1.5;
+        const overloadN = forceN - elasticLimitForceN;
+        extensionM += overloadN / (k * 0.55) + 0.0008 * Math.pow(overloadN, 2);
       }
 
+      const extensionCm = extensionM * 100.0;
       const lengthCm = naturalLengthCm + extensionCm;
-      const noise = isEquilibrium ? 0.05 * (Math.random() - 0.5) : 0.4 * Math.sin(Date.now() / 150.0);
+      const lengthM = lengthCm / 100.0;
 
       return {
         massGrams,
         massKg: massGrams / 1000.0,
         forceN: Number(forceN.toFixed(3)),
-        extensionCm: Number((extensionCm + noise).toFixed(2)),
-        lengthCm: Number((lengthCm + noise).toFixed(2)),
+        extensionM: Number(extensionM.toFixed(4)),
+        extensionCm: Number(extensionCm.toFixed(2)),
+        lengthCm: Number(lengthCm.toFixed(2)),
+        lengthM: Number(lengthM.toFixed(4)),
         isDeformed,
         isEquilibrium,
       };
@@ -58,76 +72,89 @@ export const hookesLawConfig: ExperimentConfig = {
   },
   dataTable: {
     columns: [
+      { key: 'trialNum', label: 'Trial', unit: '#', precision: 0 },
       { key: 'massGrams', label: 'Mass', unit: 'g', precision: 0 },
       { key: 'massKg', label: 'Mass', unit: 'kg', precision: 3 },
       { key: 'forceN', label: 'Force F', unit: 'N', precision: 3 },
-      { key: 'lengthCm', label: 'Length', unit: 'cm', precision: 2 },
+      { key: 'lengthCm', label: 'Length L', unit: 'cm', precision: 2 },
       { key: 'extensionCm', label: 'Extension x', unit: 'cm', precision: 2 },
+      { key: 'extensionM', label: 'Extension x', unit: 'm', precision: 4 },
+      { key: 'calculatedK', label: 'k (F/x)', unit: 'N/m', precision: 2 },
+      { key: 'isElastic', label: 'Region', unit: '', precision: 0 },
     ],
     calculateRow: (inputs: Record<string, any>) => {
       const massGrams = Number(inputs.massGrams || 0);
+      const k = Number(inputs.springK || 25.0);
+      const naturalLengthCm = Number(inputs.naturalLengthCm || 20.0);
       const forceN = (massGrams / 1000.0) * 9.81;
-      const extensionCm = (forceN / 25.0) * 100.0;
-      const lengthCm = 15.0 + extensionCm;
+      const extensionM = forceN / k;
+      const extensionCm = extensionM * 100.0;
+      const lengthCm = naturalLengthCm + extensionCm;
+      const calculatedK = extensionM > 0 ? forceN / extensionM : k;
+
       return {
         massGrams,
         massKg: massGrams / 1000.0,
         forceN: Number(forceN.toFixed(3)),
         lengthCm: Number(lengthCm.toFixed(2)),
         extensionCm: Number(extensionCm.toFixed(2)),
+        extensionM: Number(extensionM.toFixed(4)),
+        calculatedK: Number(calculatedK.toFixed(2)),
+        isElastic: massGrams <= 350,
       };
     },
   },
   graph: {
-    xAxis: { label: 'Extension x', unit: 'cm', key: 'extensionCm' },
-    yAxis: { label: 'Restoring Force F', unit: 'N', key: 'forceN' },
+    xAxis: { label: 'Extension x', unit: 'm', key: 'extensionM' },
+    yAxis: { label: 'Applied Force F', unit: 'N', key: 'forceN' },
     expectedSlopeKey: 'k',
     expectedSlopeValue: 25.0,
-    expectedFormula: 'F = k * x',
+    expectedFormula: 'F = k · x',
   },
   mistakes: [
     {
       id: 'premature-reading',
-      name: 'Reading Before Dampened Equilibrium',
+      name: 'Reading Scale Before Equilibrium',
       triggerCondition: 'inputs.isEquilibrium === false',
-      consequence: 'Fluctuating pointer readings produce scattered non-linear data points.',
-      aiExplanation: 'Always allow spring oscillations to settle under air damping before taking ruler readings.',
+      consequence: 'Dynamic oscillations introduce transient measurement errors.',
+      aiExplanation: 'Always allow spring oscillations to dampen completely under air resistance before reading the ruler pointer.',
     },
     {
       id: 'elastic-limit-exceeded',
-      name: 'Exceeding Elastic Limit (>350g)',
-      triggerCondition: 'inputs.massGrams > 350',
-      consequence: 'Spring undergoes permanent plastic deformation and no longer obeys Hooke’s Law.',
-      aiExplanation: 'Beyond the elastic limit (3.5 N load), intermolecular bonds slip permanently causing irreversible elongation.',
+      name: 'Exceeding Spring Elastic Limit',
+      triggerCondition: 'inputs.isDeformed === true',
+      consequence: 'Spring undergoes permanent plastic deformation; Hooke’s Law (F ∝ x) is violated.',
+      aiExplanation: 'Beyond the elastic limit, atomic bonds slide irreversibly. Non-linear stretch occurs and the spring will not return to L₀.',
     },
     {
       id: 'zero-offset-error',
-      name: 'Un-zeroed Pointer Baseline',
+      name: 'Incorrect Baseline Baseline Zeroing',
       triggerCondition: 'inputs.zeroOffsetOffset !== 0',
-      consequence: 'Constant systematic error shifts all extension measurements by a fixed offset.',
-      aiExplanation: 'Ensure ruler zero mark aligns precisely with initial unloaded pointer position L₀.',
+      consequence: 'Introduces a systematic zero-shift error across all measured extension values.',
+      aiExplanation: 'Ensure ruler scale zero baseline is aligned with the natural un-loaded pointer position L₀.',
     },
   ],
   assessment: [
-    { id: 'c1', description: 'Natural length L₀ recorded accurately at 0g load', points: 10, verifyCondition: 'data[0].massGrams === 0' },
-    { id: 'c2', description: 'Collected at least 5 distinct mass increments (50g - 300g)', points: 25, verifyCondition: 'data.length >= 5' },
-    { id: 'c3', description: 'Calculated Force F = m * 9.81 N correctly', points: 15, verifyCondition: 'verifyForceCalculations(data)' },
-    { id: 'c4', description: 'Plotted straight line graph of F vs x through origin', points: 20, verifyCondition: 'checkLinearity(data)' },
-    { id: 'c5', description: 'Calculated slope k = 25 N/m (within ±5% tolerance)', points: 20, verifyCondition: 'calculatedK >= 23.75 && calculatedK <= 26.25' },
-    { id: 'c6', description: 'Identified elastic limit threshold at ~350g', points: 10, verifyCondition: 'acknowledgedElasticLimit === true' },
+    { id: 'c1', description: 'Recorded natural un-loaded spring length L₀', points: 10, verifyCondition: 'data[0].massGrams === 0' },
+    { id: 'c2', description: 'Recorded at least 5 valid mass load trials', points: 20, verifyCondition: 'data.length >= 5' },
+    { id: 'c3', description: 'Accurately calculated force F = m · g in SI units', points: 15, verifyCondition: 'verifyForceCalculations(data)' },
+    { id: 'c4', description: 'Constructed linear Force F vs Extension x scatter plot', points: 20, verifyCondition: 'checkLinearity(data)' },
+    { id: 'c5', description: 'Determined spring constant k from regression slope within ±5% error', points: 25, verifyCondition: 'calculatedK >= 23.75 && calculatedK <= 26.25' },
+    { id: 'c6', description: 'Identified transition to non-linear region at elastic limit', points: 10, verifyCondition: 'acknowledgedElasticLimit === true' },
   ],
   freeMode: {
-    objective: 'Determine the unknown spring constant of the provided spring using any combination of slotted masses.',
-    availableApparatus: ['Clamp stand', 'Spring set (k=25, k=50)', 'Slotted masses (10g, 20g, 50g, 100g)', 'Meter ruler', 'Digital caliper'],
+    objective: 'Investigate various helical spring materials and determine their spring constants and elastic thresholds.',
+    availableApparatus: ['Laboratory Stand', 'Standard / Soft / Stiff Spring Set', 'Slotted Mass Set (10g–500g)', 'Digital Force Sensor', 'Millimeter Scale'],
     aiGuidanceStyle: 'safety_and_hints_only',
   },
   researchMode: {
-    scientificQuestion: 'Investigate how spring constant k varies when two identical springs are connected in series versus parallel.',
+    scientificQuestion: 'How does combining identical springs in series versus parallel affect the effective spring constant k_eff?',
     constraints: { timeMinutes: 30, budget: 100, safetyLevel: 'Low Risk' },
-    requiredIdentifications: ['Independent variable: Spring configuration', 'Dependent variable: System extension', 'Control variable: Applied mass load'],
+    requiredIdentifications: ['Independent variable: Spring configuration (Series/Parallel)', 'Dependent variable: System extension x', 'Control variable: Total mass load m'],
   },
   smartboardTrigger: {
-    detectedLaTeX: ['F = -kx', 'F = k x', '\\Delta F = k \\Delta x', 'k = \\frac{F}{x}'],
-    conceptKeywords: ['hooke', 'spring constant', 'elasticity', 'restoring force', 'extension', 'elastic limit'],
+    detectedLaTeX: ['F = -kx', 'F = k x', '\\Delta F = k \\Delta x', 'k = \\frac{F}{x}', 'U = \\frac{1}{2} k x^2'],
+    conceptKeywords: ['hooke', 'spring constant', 'elasticity', 'restoring force', 'extension', 'elastic limit', 'stiffness'],
   },
 };
+

@@ -1,18 +1,19 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { RotateCcw, PenTool, Bug } from 'lucide-react';
 import { useBoardStore } from '../../store/boardStore';
 import type { CanvasObject, Point, DetectionResult } from '../../types/canvas';
 import { scheduleDetection, calculateBoundingBox } from '../../services/detectionService';
 import { FloatingSuggestion } from './FloatingSuggestion';
+import { RightSideSuggestionPill } from './RightSideSuggestionPill';
 import { ShapeRecognitionBadge } from './ShapeRecognitionBadge';
 import { ShapeRecognitionEngine } from '../../recognition/ShapeRecognitionEngine';
 import { LongPressDetector } from '../../recognition/LongPressDetector';
 import { ShapeConverter } from '../../recognition/ShapeConverter';
-import type { RecognitionResult, SemanticShapeObject } from '../../recognition/types';
+import type { RecognitionResult } from '../../recognition/types';
 import { PenInputEngine } from '../../pen/PenInputEngine';
 import { inkRenderer } from '../../pen/InkRenderer';
 import { PenDiagnosticsPanel } from '../../pen/PenDiagnosticsPanel';
 import type { PenPoint, PointerDeviceType } from '../../pen/types';
-import { RotateCcw, Bug, PenTool } from 'lucide-react';
 
 const shapeEngine = new ShapeRecognitionEngine();
 const shapeConverter = new ShapeConverter();
@@ -36,9 +37,7 @@ export const SmartboardCanvas: React.FC = () => {
     updateObject,
     deleteSelectedObjects,
     selectObject,
-    clearSelection,
     setTransform,
-    setZoom,
     setActiveDetection,
     activeDetection,
     setEquationModalOpen,
@@ -52,17 +51,14 @@ export const SmartboardCanvas: React.FC = () => {
   const [panStart, setPanStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
 
-  // Pen & Hardware Hover States
-  const [lastPenPoint, setLastPenPoint] = useState<PenPoint | null>(null);
   const [activePointerType, setActivePointerType] = useState<PointerDeviceType>('mouse');
   const [hoverScreenPos, setHoverScreenPos] = useState<{ x: number; y: number } | null>(null);
   const [isHovering, setIsHovering] = useState<boolean>(false);
-  const [showDiagnostics, setShowDiagnostics] = useState<boolean>(false);
+  const [lastPenPoint, setLastPenPoint] = useState<PenPoint | null>(null);
 
-  // Debug Mode State
+  const [showDiagnostics, setShowDiagnostics] = useState<boolean>(false);
   const [isDebugMode, setIsDebugMode] = useState<boolean>(false);
 
-  // Shape Recognition States
   const [recognitionResult, setRecognitionResult] = useState<RecognitionResult | null>(null);
   const [targetStrokeId, setTargetStrokeId] = useState<string | null>(null);
   const [longPressProgress, setLongPressProgress] = useState<number>(0);
@@ -70,7 +66,6 @@ export const SmartboardCanvas: React.FC = () => {
 
   const longPressDetectorRef = useRef<LongPressDetector | null>(null);
 
-  // Convert client screen coordinates to infinite canvas internal world coordinates
   const screenToCanvas = useCallback(
     (screenX: number, screenY: number): Point => {
       if (!containerRef.current) return { x: screenX, y: screenY };
@@ -82,67 +77,64 @@ export const SmartboardCanvas: React.FC = () => {
     [transform]
   );
 
-  // Pivoted Canvas Zooming
-  const zoomAtPoint = useCallback(
-    (targetZoom: number, pivotX: number, pivotY: number) => {
-      const clampedZoom = Math.min(Math.max(targetZoom, 0.5), 3.0);
-      const ratio = clampedZoom / (transform.zoom || 1);
-      const newX = pivotX - (pivotX - transform.x) * ratio;
-      const newY = pivotY - (pivotY - transform.y) * ratio;
-      setTransform({ x: newX, y: newY, zoom: clampedZoom });
-    },
-    [transform, setTransform]
-  );
+  const zoomAtPoint = (newZoom: number, pivotX: number, pivotY: number) => {
+    const currentZoom = transform.zoom;
+    const clampedZoom = Math.min(Math.max(newZoom, 0.5), 3.0);
+    const zoomRatio = clampedZoom / currentZoom;
 
-  // Atomic & Safe Shape Conversion Trigger (Rule 8, 15, 16, 17, 18, 19)
+    const newX = pivotX - (pivotX - transform.x) * zoomRatio;
+    const newY = pivotY - (pivotY - transform.y) * zoomRatio;
+
+    setTransform({ x: newX, y: newY, zoom: clampedZoom });
+  };
+
+  const handleResetZoom = () => {
+    setTransform({ x: 0, y: 0, zoom: 1.0 });
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const pivotX = e.clientX - rect.left;
+    const pivotY = e.clientY - rect.top;
+
+    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+    zoomAtPoint(transform.zoom * zoomFactor, pivotX, pivotY);
+  };
+
   const triggerConversion = useCallback(
-    (strokeId: string, result: RecognitionResult) => {
-      console.log('[HoloLearn Convert Triggered]', { strokeId, result });
-
-      if (!result || !result.best || !result.sourceObjectId) {
-        console.warn('[HoloLearn Convert Aborted] Invalid recognition result or missing candidate.');
-        return;
-      }
-
+    (targetIdParam?: string, resultParam?: any) => {
       const currentObjs = useBoardStore.getState().objects;
-      let targetId = strokeId || result.sourceObjectId;
-      let originalObj = currentObjs.find((o) => o.id === targetId);
+      let targetId = targetIdParam || targetStrokeId;
+      let result = resultParam || recognitionResult;
 
-      // Fallback: If targetId is not found, target the most recent freehand stroke
+      if (!result || (!result.bestCandidate && !result.best)) return;
+
+      let originalObj = currentObjs.find((o) => o.id === targetId);
       if (!originalObj) {
         originalObj = currentObjs.slice().reverse().find((o) => o.type === 'stroke');
-        if (originalObj) {
-          targetId = originalObj.id;
-        }
+        if (originalObj) targetId = originalObj.id;
       }
 
-      if (!originalObj) {
-        console.error('[HoloLearn Convert Failed] Original stroke object not found in canvas state. Canvas kept untouched.');
-        return;
-      }
+      if (!originalObj) return;
 
-      // 1. Generate semantic shape object
-      const convRes = shapeEngine.convert(result);
-      if (!convRes.success || !convRes.convertedObject) {
-        console.error('[HoloLearn Convert Failed] Conversion engine failed. Keeping original stroke drawing.');
-        return;
-      }
+      const convRes = shapeEngine.convert(originalObj, result);
+      if (!convRes || !convRes.success) return;
 
       const semantic = convRes.convertedObject;
-      const bbox = result.metrics.boundingBox;
+      const bbox = result.metrics?.boundingBox || { x: originalObj.x, y: originalObj.y, width: originalObj.width, height: originalObj.height };
 
       let shapeSubtype: any = 'circle';
       if (semantic.type === 'rectangle' || semantic.type === 'square') shapeSubtype = 'rectangle';
       else if (semantic.type === 'triangle') shapeSubtype = 'triangle';
       else if (semantic.type === 'line') shapeSubtype = 'line';
-      else if (semantic.type === 'arrow') shapeSubtype = 'arrow';
 
-      // 2. Build semantic CanvasObject preserving original color, stroke width, and position
       const convertedCanvasObj: CanvasObject = {
-        id: semantic.id,
+        id: semantic.id || `converted-${Date.now()}`,
         type: 'shape',
         shapeSubtype,
-        points: shapeConverter.shapeToPoints(result.best, 128),
+        points: shapeConverter.shapeToPoints(result.bestCandidate || result.best, 128),
         x: bbox.x,
         y: bbox.y,
         width: Math.max(bbox.width, 20),
@@ -157,52 +149,46 @@ export const SmartboardCanvas: React.FC = () => {
         isConverted: true,
       };
 
-      // 3. Validate renderability of converted object before state mutation
-      if (!convertedCanvasObj.semanticShape || !convertedCanvasObj.semanticShape.geometry) {
-        console.error('[HoloLearn Convert Failed] Converted object is missing geometry. Keeping original stroke.');
-        return;
-      }
-
-      // 4. Atomic In-Place State Replacement
       pushHistory();
-      const objectsBefore = currentObjs.length;
-      const nextObjects = currentObjs.map((o) => (o.id === targetId ? convertedCanvasObj : o));
-      const objectsAfter = nextObjects.length;
-
-      console.log('[HoloLearn Convert Success]', {
-        targetId,
-        convertedId: convertedCanvasObj.id,
-        shapeType: semantic.type,
-        geometry: semantic.geometry,
-        objectsBefore,
-        objectsAfter,
-      });
-
-      useBoardStore.setState({ objects: nextObjects });
+      useBoardStore.setState((state) => ({
+        objects: state.objects.map((o) => (o.id === targetId ? convertedCanvasObj : o)),
+      }));
 
       setRecognitionResult(null);
       setTargetStrokeId(null);
     },
-    [pushHistory]
+    [targetStrokeId, recognitionResult, pushHistory]
   );
 
-  // Initialize LongPressDetector
+  const handleConvertCurrentStroke = useCallback(
+    (detection?: DetectionResult) => {
+      const strokeId = detection?.sourceObjectId || targetStrokeId;
+      const res = detection?.recognitionResult || recognitionResult;
+
+      if (res && strokeId) {
+        triggerConversion(strokeId, res);
+      } else if (objects.length > 0) {
+        const lastStroke = objects.slice().reverse().find((o) => o.type === 'stroke');
+        if (lastStroke) {
+          const recognized = shapeEngine.recognizeSync(lastStroke);
+          if (recognized && (recognized.bestCandidate || recognized.best)) {
+            triggerConversion(lastStroke.id, recognized);
+          }
+        }
+      }
+    },
+    [targetStrokeId, recognitionResult, objects, triggerConversion]
+  );
+
   useEffect(() => {
     longPressDetectorRef.current = new LongPressDetector(() => {
-      if (targetStrokeId && recognitionResult && recognitionResult.best) {
+      if (targetStrokeId && recognitionResult) {
         triggerConversion(targetStrokeId, recognitionResult);
-        addAIMessage({
-          sender: 'ai',
-          text: `Converted freehand stroke into clean **${recognitionResult.best.type}** (${Math.round(
-            recognitionResult.best.confidence * 100
-          )}% match).`,
-        });
       }
       setLongPressProgress(0);
     });
-  }, [targetStrokeId, recognitionResult, triggerConversion, addAIMessage]);
+  }, [targetStrokeId, recognitionResult, triggerConversion]);
 
-  // Handle Canvas Resize with High-DPI (DevicePixelRatio) scaling
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current && canvasRef.current) {
@@ -221,7 +207,6 @@ export const SmartboardCanvas: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Main Canvas Rendering Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -235,19 +220,14 @@ export const SmartboardCanvas: React.FC = () => {
       const displayWidth = canvas.clientWidth;
       const displayHeight = canvas.clientHeight;
 
-      // 1. Reset matrix to identity and clear physical hardware buffer
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // 2. Set DPR scale cleanly for 1:1 crispness
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // 3. Apply pan & zoom transform
       ctx.save();
       ctx.translate(transform.x, transform.y);
       ctx.scale(transform.zoom, transform.zoom);
 
-      // Draw 24px Dot Grid
       if (showGrid) {
         const gridSpacing = 24;
         const startX = Math.floor(-transform.x / transform.zoom / gridSpacing) * gridSpacing - gridSpacing;
@@ -265,33 +245,21 @@ export const SmartboardCanvas: React.FC = () => {
         }
       }
 
-      // Render Canvas Objects (Safely wrapped)
       objects.forEach((obj) => {
         const isSelected = selectedIds.includes(obj.id);
-
         ctx.save();
         ctx.globalAlpha = obj.opacity ?? 1;
 
         try {
-          // Render Shapes (Circle, Ellipse, Rectangle, Triangle, Line, Arrow, Polygon)
           if (obj.type === 'shape') {
             ctx.strokeStyle = obj.strokeColor || '#ffffff';
             ctx.lineWidth = Math.max(3.5, obj.strokeWidth || 3.5);
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            ctx.shadowBlur = 4;
-            ctx.shadowColor = 'rgba(255, 255, 255, 0.3)';
 
             if (obj.semanticShape && obj.semanticShape.geometry) {
-              inkRenderer.renderSemanticShape(
-                ctx,
-                obj.semanticShape,
-                isSelected,
-                obj.strokeColor || '#ffffff',
-                obj.strokeWidth || 3.5
-              );
+              inkRenderer.renderSemanticShape(ctx, obj.semanticShape, isSelected, obj.strokeColor || '#ffffff', obj.strokeWidth || 3.5);
             } else {
-              // Default shape subtype fallback
               ctx.beginPath();
               const { x, y, width, height } = obj;
               if (obj.shapeSubtype === 'circle') {
@@ -307,20 +275,10 @@ export const SmartboardCanvas: React.FC = () => {
               } else if (obj.shapeSubtype === 'line') {
                 ctx.moveTo(x, y);
                 ctx.lineTo(x + width, y + height);
-              } else if (obj.shapeSubtype === 'arrow') {
-                ctx.moveTo(x, y + height / 2);
-                ctx.lineTo(x + width, y + height / 2);
-                ctx.lineTo(x + width - 10, y + height / 2 - 6);
-                ctx.moveTo(x + width, y + height / 2);
-                ctx.lineTo(x + width - 10, y + height / 2 + 6);
               }
               ctx.stroke();
             }
-            ctx.shadowBlur = 0;
-          }
-
-          // Render Stroke using InkRenderer
-          else if (obj.type === 'stroke') {
+          } else if (obj.type === 'stroke' || obj.type === 'handwriting') {
             if (obj.points && obj.points.length > 0) {
               const penPoints: PenPoint[] = obj.points.map((p) => ({
                 x: p.x,
@@ -331,20 +289,10 @@ export const SmartboardCanvas: React.FC = () => {
                 velocity: p.velocity || 0,
               }));
 
-              inkRenderer.renderStroke(
-                ctx,
-                penPoints,
-                obj.strokeColor || '#ffffff',
-                obj.strokeWidth || 3.5,
-                obj.opacity < 0.5
-              );
+              inkRenderer.renderStroke(ctx, penPoints, obj.strokeColor || '#ffffff', obj.strokeWidth || 3.5, obj.opacity < 0.5);
             }
-          }
-
-          // Render Text / Equation with Glassmorphic Pill Box
-          else if (obj.type === 'text' || obj.type === 'equation') {
+          } else if (obj.type === 'text' || obj.type === 'equation') {
             const content = obj.mathLatex || obj.text || '';
-
             ctx.save();
             ctx.font = obj.type === 'equation' ? '600 24px "JetBrains Mono", monospace' : '500 20px "Inter", sans-serif';
             const textMetrics = ctx.measureText(content);
@@ -365,63 +313,20 @@ export const SmartboardCanvas: React.FC = () => {
             ctx.restore();
           }
 
-          // Visual Debug Mode Overlay (Rule 20)
-          if (isDebugMode && (obj.type === 'stroke' || obj.type === 'shape')) {
-            ctx.save();
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([4, 4]);
-            ctx.strokeRect(obj.x, obj.y, obj.width, obj.height);
-            ctx.setLineDash([]);
-
-            if (obj.semanticShape && obj.semanticShape.geometry) {
-              const geo = obj.semanticShape.geometry;
-              if (geo.type === 'circle' && typeof geo.centerX === 'number') {
-                ctx.fillStyle = '#ffffff';
-                ctx.beginPath();
-                ctx.arc(geo.centerX, geo.centerY, 3, 0, Math.PI * 2);
-                ctx.fill();
-              }
-            }
-
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.font = '10px "JetBrains Mono", monospace';
-            ctx.fillText(
-              `[${obj.type}] ${obj.recognizedShapeType || 'raw'} (${Math.round(obj.x)}, ${Math.round(obj.y)})`,
-              obj.x,
-              obj.y - 8
-            );
-            ctx.restore();
-          }
-
-          // Render Selection Handles
           if (isSelected) {
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1.5;
             ctx.setLineDash([6, 6]);
             ctx.strokeRect(obj.x - 6, obj.y - 6, obj.width + 12, obj.height + 12);
             ctx.setLineDash([]);
-
-            ctx.fillStyle = '#ffffff';
-            const handleSize = 6;
-            const corners = [
-              { x: obj.x - 6, y: obj.y - 6 },
-              { x: obj.x + obj.width + 6, y: obj.y - 6 },
-              { x: obj.x - 6, y: obj.y + obj.height + 6 },
-              { x: obj.x + obj.width + 6, y: obj.y + obj.height + 6 },
-            ];
-            corners.forEach((c) => {
-              ctx.fillRect(c.x - handleSize / 2, c.y - handleSize / 2, handleSize, handleSize);
-            });
           }
         } catch (err) {
-          console.error('[HoloLearn Render Exception] Safely recovered from object rendering error:', err, obj);
+          console.error('[HoloLearn Render Safe Recover]', err);
         }
 
         ctx.restore();
       });
 
-      // Render Active In-Progress Pressure-Sensitive Pen Stroke
       if (isDrawing && currentPoints.length > 0) {
         inkRenderer.renderStroke(
           ctx,
@@ -434,7 +339,6 @@ export const SmartboardCanvas: React.FC = () => {
 
       ctx.restore();
 
-      // Render Active Pen Stylus Hover Cursor in Screen Space
       if (isHovering && hoverScreenPos && !isDrawing) {
         inkRenderer.renderHoverCursor(ctx, hoverScreenPos, strokeWidth);
       }
@@ -447,46 +351,23 @@ export const SmartboardCanvas: React.FC = () => {
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [
-    objects,
-    selectedIds,
-    isDrawing,
-    currentPoints,
-    activeTool,
-    activeShape,
-    strokeWidth,
-    transform,
-    showGrid,
-    isDebugMode,
-    isHovering,
-    hoverScreenPos,
-    pushHistory,
-  ]);
+  }, [objects, selectedIds, isDrawing, currentPoints, activeTool, activeShape, strokeWidth, transform, showGrid, isHovering, hoverScreenPos]);
 
-  // Active Pen Pointer Handlers
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (mode === 'student') return;
+    const screenPos = { x: e.clientX, y: e.clientY };
+    const pos = screenToCanvas(e.clientX, e.clientY);
 
     const pointerType = (e.pointerType || 'mouse') as PointerDeviceType;
     setActivePointerType(pointerType);
 
-    if (pointerType === 'pen') {
-      penInputEngineRef.current.setStylusActive(true);
-    }
-
-    const screenPos = { x: e.clientX, y: e.clientY };
-    const pos = screenToCanvas(e.clientX, e.clientY);
-
-    // Pan Canvas
-    if (activeTool === 'hand' || e.button === 1) {
+    if (e.button === 1 || (e.button === 0 && (e as any).spaceKey)) {
       setIsPanning(true);
       setPanStart({ x: e.clientX - transform.x, y: e.clientY - transform.y });
       return;
     }
 
-    // Select Tool
     if (activeTool === 'select') {
-      const clicked = objects.slice().reverse().find((obj) => {
+      const clickedObj = objects.slice().reverse().find((obj) => {
         return (
           pos.x >= obj.x - 10 &&
           pos.x <= obj.x + obj.width + 10 &&
@@ -495,23 +376,15 @@ export const SmartboardCanvas: React.FC = () => {
         );
       });
 
-      if (clicked) {
-        selectObject(clicked.id, e.shiftKey);
-        setDragStart({ x: pos.x - clicked.x, y: pos.y - clicked.y });
-
-        if (clicked.type === 'stroke') {
-          setTargetStrokeId(clicked.id);
-          setLongPressScreenPos(screenPos);
-          longPressDetectorRef.current?.start(pos);
-        }
+      if (clickedObj) {
+        selectObject(clickedObj.id, e.shiftKey);
+        setDragStart({ x: pos.x - clickedObj.x, y: pos.y - clickedObj.y });
       } else {
-        clearSelection();
-        setTargetStrokeId(null);
+        useBoardStore.getState().clearSelection();
       }
       return;
     }
 
-    // Eraser
     if (activeTool === 'eraser') {
       const toDelete = objects.filter((obj) => {
         return (
@@ -533,33 +406,7 @@ export const SmartboardCanvas: React.FC = () => {
       return;
     }
 
-    if (activeTool === 'text') {
-      const textVal = prompt('Enter text for canvas:', 'Velocity = v = u + at');
-      if (textVal) {
-        const newObj: CanvasObject = {
-          id: `text-${Date.now()}`,
-          type: 'text',
-          points: [pos],
-          x: pos.x,
-          y: pos.y,
-          width: textVal.length * 11 + 20,
-          height: 30,
-          strokeColor: '#ffffff',
-          strokeWidth: 2,
-          opacity: 1,
-          text: textVal,
-          zIndex: objects.length + 1,
-        };
-        addObject(newObj);
-        scheduleDetection(newObj, setActiveDetection);
-      }
-      return;
-    }
-
-    // Pen / Highlighter Drawing Mode
-    const penPoints = penInputEngineRef.current.normalizePointerEvent(e, (sx, sy) =>
-      screenToCanvas(sx, sy)
-    );
+    const penPoints = penInputEngineRef.current.normalizePointerEvent(e, (sx, sy) => screenToCanvas(sx, sy));
 
     if (penPoints.length > 0) {
       setIsDrawing(true);
@@ -600,9 +447,7 @@ export const SmartboardCanvas: React.FC = () => {
 
     if (!isDrawing) return;
 
-    const penPoints = penInputEngineRef.current.normalizePointerEvent(e, (sx, sy) =>
-      screenToCanvas(sx, sy)
-    );
+    const penPoints = penInputEngineRef.current.normalizePointerEvent(e, (sx, sy) => screenToCanvas(sx, sy));
 
     if (penPoints.length > 0) {
       setCurrentPoints((prev) => [...prev, ...penPoints]);
@@ -645,9 +490,8 @@ export const SmartboardCanvas: React.FC = () => {
 
       addObject(strokeObj);
 
-      // Instant Synchronous Shape Recognition
-      const res = shapeEngine.recognizeSync(strokeObj.id, strokeObj.points);
-      if (res.best) {
+      const res = shapeEngine.recognizeSync(strokeObj);
+      if (res && (res.bestCandidate || res.best)) {
         setRecognitionResult(res);
         setTargetStrokeId(strokeObj.id);
 
@@ -659,9 +503,8 @@ export const SmartboardCanvas: React.FC = () => {
           });
         });
 
-        // Automatic Shape Conversion Trigger
         const autoConvertEnabled = useBoardStore.getState().autoConvertShape;
-        const bestCandidate = res.best;
+        const bestCandidate = res.bestCandidate || res.best;
         if (autoConvertEnabled && bestCandidate && bestCandidate.confidence >= 0.70) {
           setTimeout(() => {
             triggerConversion(strokeObj.id, res);
@@ -705,39 +548,6 @@ export const SmartboardCanvas: React.FC = () => {
     setHoverScreenPos(null);
   };
 
-  // Wheel Handler: Smooth Cursor-Pivoted Zooming
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const pivotX = e.clientX - rect.left;
-    const pivotY = e.clientY - rect.top;
-
-    const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-    zoomAtPoint(transform.zoom * zoomFactor, pivotX, pivotY);
-  };
-
-  const handleResetZoom = () => {
-    setTransform({ x: 0, y: 0, zoom: 1.0 });
-  };
-
-  const handleConvertCurrentStroke = (det?: DetectionResult) => {
-    const strokeId = det?.sourceObjectId || targetStrokeId;
-    const res = det?.recognitionResult || recognitionResult;
-
-    if (res && strokeId) {
-      triggerConversion(strokeId, res);
-    } else if (objects.length > 0) {
-      const lastStroke = objects.slice().reverse().find((o) => o.type === 'stroke');
-      if (lastStroke) {
-        const recognized = shapeEngine.recognizeSync(lastStroke.id, lastStroke.points);
-        if (recognized.best) {
-          triggerConversion(lastStroke.id, recognized);
-        }
-      }
-    }
-  };
-
   return (
     <div
       ref={containerRef}
@@ -753,18 +563,13 @@ export const SmartboardCanvas: React.FC = () => {
 
       {/* AI Floating Suggestion Card */}
       <FloatingSuggestion onConvertShape={handleConvertCurrentStroke} />
+      <RightSideSuggestionPill />
 
       {/* Smart Shape Recognition Badge & Long Press Arc */}
       <ShapeRecognitionBadge
         result={recognitionResult}
         transform={transform}
-        onConvert={() => {
-          if (targetStrokeId && recognitionResult) {
-            triggerConversion(targetStrokeId, recognitionResult);
-          } else {
-            handleConvertCurrentStroke();
-          }
-        }}
+        onConvert={handleConvertCurrentStroke}
         onDismiss={() => setRecognitionResult(null)}
         longPressProgress={longPressProgress}
         longPressPos={longPressScreenPos}
@@ -781,7 +586,7 @@ export const SmartboardCanvas: React.FC = () => {
       )}
 
       {/* Floating Canvas Quick Info, Stylus Diagnostics, Reset Zoom & Debug Toggle */}
-      <div className="absolute top-4 left-4 text-[11px] font-mono text-zinc-400 bg-black/80 backdrop-blur px-3 py-1.5 rounded-lg border border-white/15 flex items-center gap-3 shadow-xl pointer-events-auto">
+      <div className="absolute top-4 left-4 text-[11px] font-mono text-zinc-400 bg-black/80 backdrop-blur px-3 py-1.5 rounded-lg border border-white/15 flex items-center gap-3 shadow-xl pointer-events-auto z-20">
         <span>MODE: {mode.toUpperCase()}</span>
         <span>OBJECTS: {objects.length}</span>
         <button

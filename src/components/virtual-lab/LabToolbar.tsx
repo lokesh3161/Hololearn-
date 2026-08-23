@@ -49,11 +49,6 @@ export const LabToolbar: React.FC<LabToolbarProps> = ({
   const [isToolsExpanded, setIsToolsExpanded] = useState(false);
   const [isPenConfigOpen, setIsPenConfigOpen] = useState(false);
 
-  // ANNOTATION TOOLS ARE FULLSCREEN-ONLY. If not in fullscreen mode, render NOTHING!
-  if (!isFullscreen) {
-    return null;
-  }
-
   const handleToggleTools = () => {
     setIsToolsExpanded((prev) => !prev);
     if (isToolsExpanded) {

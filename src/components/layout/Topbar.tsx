@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Sparkles, Edit3, Shield, UserCheck, Play, ChevronDown, Search } from 'lucide-react';
+import { Sparkles, Edit3, Shield, UserCheck, Play, ChevronDown, Search, Mic, Clock } from 'lucide-react';
 import { useBoardStore } from '../../store/boardStore';
 import { searchSimulations } from '../../registry/simulationRegistry';
 import type { SimulationId } from '../../types/canvas';
+import { VoiceIntelligenceEngine } from '../../services/VoiceIntelligenceEngine';
+import { SearchableLectureTimeline } from '../smartboard/SearchableLectureTimeline';
 
 export const Topbar: React.FC = () => {
   const {
@@ -23,6 +25,8 @@ export const Topbar: React.FC = () => {
   const [tempTitle, setTempTitle] = useState(lessonTitle);
   const [showSimMenu, setShowSimMenu] = useState(false);
   const [simSearchQuery, setSimSearchQuery] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [showTimelineModal, setShowTimelineModal] = useState(false);
 
   const handleTitleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,6 +133,33 @@ export const Topbar: React.FC = () => {
         >
           <Sparkles className={`w-3.5 h-3.5 ${autoConvertShape ? 'text-black' : 'text-zinc-400'}`} />
           <span>Auto-Shape: {autoConvertShape ? 'ON' : 'OFF'}</span>
+        </button>
+
+        {/* Voice Intelligence Mic Toggle Button */}
+        <button
+          onClick={() => {
+            const isNowListening = VoiceIntelligenceEngine.toggleListening((listening) => setIsListening(listening));
+            setIsListening(isNowListening);
+          }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-mono transition-all active:scale-95 ${
+            isListening
+              ? 'bg-red-500 text-white font-bold border-red-400 animate-pulse shadow-lg'
+              : 'bg-zinc-900 text-cyan-300 border-cyan-500/40 hover:bg-zinc-800'
+          }`}
+          title="Toggle Far-Field Voice Intelligence Listening"
+        >
+          <Mic className="w-3.5 h-3.5" />
+          <span>{isListening ? 'VOICE ON' : 'VOICE'}</span>
+        </button>
+
+        {/* Searchable Lecture Timeline Modal Launcher */}
+        <button
+          onClick={() => setShowTimelineModal(!showTimelineModal)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-xs text-amber-300 border border-amber-500/40 transition-all font-bold font-mono active:scale-95 shadow"
+          title="Open Searchable Lecture Transcript Timeline"
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>Timeline</span>
         </button>
 
         {/* Virtual Laboratory Platform Launcher */}
@@ -251,6 +282,15 @@ export const Topbar: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Searchable Lecture Timeline Modal Overlay */}
+      {showTimelineModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="max-w-lg w-full">
+            <SearchableLectureTimeline onClose={() => setShowTimelineModal(false)} />
+          </div>
+        </div>
+      )}
     </header>
   );
 };

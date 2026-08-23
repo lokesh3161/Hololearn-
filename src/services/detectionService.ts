@@ -35,7 +35,7 @@ export function analyzeShape(obj: CanvasObject): { type: string; confidence: num
   const pts = obj.points;
   if (!pts || pts.length < 5) return null;
 
-  const recResult = shapeEngine.recognizeSync(obj.id, pts);
+  const recResult = shapeEngine.recognizeSync(obj);
   if (!recResult || !recResult.best || recResult.best.confidence < 0.3) return null;
 
   const best = recResult.best;

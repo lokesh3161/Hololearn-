@@ -15,6 +15,7 @@ import { useBoardStore } from '../../store/boardStore';
 import { detectEquation, getEquationById } from '../../registry/equationRegistry';
 import { scheduleDetection } from '../../services/detectionService';
 import type { SimulationId } from '../../types/canvas';
+import { SparkTeacherAssistant } from '../../services/SparkTeacherAssistant';
 
 export const AIPanel: React.FC = () => {
   const {
@@ -196,34 +197,32 @@ export const AIPanel: React.FC = () => {
         )}
       </div>
 
-      {/* Action Cards */}
+      {/* Spark Teacher Assistant Action Cards */}
       <div className="p-3 border-b border-white/10 flex gap-2 overflow-x-auto no-scrollbar">
         <button
-          onClick={handleAnalyzeBoard}
+          onClick={() => SparkTeacherAssistant.generateQuizMCQs()}
           className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-black font-semibold text-xs transition-all active:scale-95 shadow-md"
         >
           <Sparkles className="w-3 h-3 text-black" />
+          <span>Create 5 MCQs</span>
+        </button>
+        <button
+          onClick={() => SparkTeacherAssistant.translateToTelugu()}
+          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-cyan-500/40 text-xs text-cyan-300 transition-all active:scale-95 font-mono font-bold"
+        >
+          <span>🌐 Telugu Translate</span>
+        </button>
+        <button
+          onClick={() => SparkTeacherAssistant.summarizeLast10Minutes()}
+          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-amber-500/40 text-xs text-amber-300 transition-all active:scale-95 font-mono font-bold"
+        >
+          <span>📋 Summarize 10 Mins</span>
+        </button>
+        <button
+          onClick={handleAnalyzeBoard}
+          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-xs text-zinc-200 hover:text-white transition-all active:scale-95"
+        >
           <span>Analyze Board</span>
-        </button>
-        <button
-          onClick={() => openSimulation(matchedEq?.simulationType || 'newton')}
-          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-xs text-zinc-200 hover:text-white transition-all active:scale-95"
-        >
-          <Play className="w-3 h-3 text-white" />
-          <span>Launch Simulator</span>
-        </button>
-        <button
-          onClick={() => {
-            setActiveTab('Quiz');
-            addAIMessage({
-              sender: 'ai',
-              text: `Generated 3 practice questions for **${matchedEq?.displayName || 'Classical Mechanics'}**.`,
-            });
-          }}
-          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-xs text-zinc-200 hover:text-white transition-all active:scale-95"
-        >
-          <CheckCircle2 className="w-3 h-3 text-white" />
-          <span>Practice Quiz</span>
         </button>
       </div>
 

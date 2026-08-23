@@ -179,7 +179,39 @@ export const LabWorkbenchView: React.FC = () => {
     config.id === 'lead-acid-battery' ||
     config.id === 'ferrous-iron-dichromate' ||
     config.id === 'ferrous-dichromate' ||
-    config.id === 'iron-dichromate-titration'
+    config.id === 'iron-dichromate-titration' ||
+    config.id === 'ph-water-soil' ||
+    config.id === 'ph-water-soil-samples' ||
+    config.id === 'water-soil-ph' ||
+    config.id === 'ph-meter-calibration' ||
+    config.id === 'phenol-formaldehyde-polymer' ||
+    config.id === 'phenol-formaldehyde' ||
+    config.id === 'bakelite-lab' ||
+    config.id === 'polymerization-lab' ||
+    config.id === 'newtons-rings' ||
+    config.id === 'newtons-rings-radius' ||
+    config.id === 'newtons-rings-plano-convex' ||
+    config.id === 'radius-of-curvature-lens' ||
+    config.id === 'carey-foster-bridge' ||
+    config.id === 'carey-foster' ||
+    config.id === 'series-parallel-resistances' ||
+    config.id === 'resistance-combination-bridge' ||
+    config.id === 'dielectric-constant-rc' ||
+    config.id === 'dielectric-constant' ||
+    config.id === 'rc-charging-discharging' ||
+    config.id === 'dielectric-permittivity' ||
+    config.id === 'torsional-pendulum-rigidity' ||
+    config.id === 'torsional-pendulum' ||
+    config.id === 'rigidity-modulus' ||
+    config.id === 'shear-modulus-wire' ||
+    config.id === 'diffraction-grating-laser' ||
+    config.id === 'laser-wavelength-diffraction' ||
+    config.id === 'diffraction-grating' ||
+    config.id === 'laser-diffraction' ||
+    config.id === 'hookes-law' ||
+    config.id === 'hookes-law-spring' ||
+    config.id === 'centripetal-force' ||
+    config.id === 'centripetal'
   ) {
     return (
       <AnimatePresence>

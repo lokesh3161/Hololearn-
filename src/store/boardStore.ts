@@ -204,7 +204,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
 
   setVirtualLabDashboardOpen: (isVirtualLabDashboardOpen) => set({ isVirtualLabDashboardOpen }),
-  openVirtualLab: (labId, mode = 'guided') => {
+  openVirtualLab: (labId: string, mode = 'guided') => {
     set({ activeLabMode: mode });
     get().labActions.openLab(labId);
   },

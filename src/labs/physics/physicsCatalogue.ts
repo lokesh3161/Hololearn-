@@ -357,35 +357,91 @@ export const centripetalConfig: ExperimentConfig = {
   id: 'centripetal-force',
   title: 'Centripetal Force in Circular Motion',
   subject: 'physics',
-  objective: 'Measure centripetal force as a function of angular velocity and orbital radius.',
+  objective: 'Investigate the mathematical relationship between mass (m), tangential velocity (v), radius (r), centripetal acceleration (a_c), and centripetal force (F_c = m v² / r).',
   apparatus: [
-    { id: 'rig', name: 'Rotating Platform Rig', specs: '30 - 180 RPM', instructions: 'Set RPM and radius.' },
+    { id: 'track', name: 'Circular Dynamics Motion Track', specs: 'Variable radius r = 0.5m to 10.0m', instructions: 'Set motion radius.' },
+    { id: 'massObj', name: 'Calibrated Orbital Mass', specs: 'Variable mass m = 0.1kg to 10.0kg', instructions: 'Select test mass.' },
+    { id: 'drive', name: 'Variable Velocity Motor Drive', specs: 'Tangential speed v = 1.0m/s to 20.0m/s', instructions: 'Adjust tangential velocity.' },
+    { id: 'sensor', name: 'Center Radial Force Sensor', specs: 'Piezoelectric radial tension/compression sensor', instructions: 'Reads real-time net inward force F_c.' },
   ],
   procedure: [
-    { stepNumber: 1, instruction: 'Spin platform and measure force.', expectedAction: 'Click Record.' },
+    { stepNumber: 1, instruction: 'Set object mass (m) to 2.0 kg and orbit radius (r) to 2.0 m.', expectedAction: 'Set baseline m and r.' },
+    { stepNumber: 2, instruction: 'Vary tangential velocity (v) from 2.0 m/s to 10.0 m/s in steps of 2.0 m/s.', expectedAction: 'Record F_c for Experiment A.' },
+    { stepNumber: 3, instruction: 'Keep velocity (v = 5.0 m/s) and radius (r = 2.0 m) constant; vary mass (m) from 0.5 kg to 5.0 kg.', expectedAction: 'Record F_c for Experiment B.' },
+    { stepNumber: 4, instruction: 'Keep mass (m = 2.0 kg) and velocity (v = 5.0 m/s) constant; vary radius (r) from 1.0 m to 5.0 m.', expectedAction: 'Record F_c for Experiment C.' },
+    { stepNumber: 5, instruction: 'Plot F_c vs v, F_c vs m, and F_c vs r graphs to confirm linear and non-linear mathematical dependencies.', expectedAction: 'Analyze interactive graphs.' },
   ],
   stateEngine: {
-    calculateState: () => ({ ok: true }),
+    calculateState: (inputs: Record<string, any>) => {
+      const m = Number(inputs.mass || 2.0);
+      const v = Number(inputs.velocity || 5.0);
+      const r = Number(inputs.radius || 2.0);
+
+      const ac = (v * v) / r;
+      const Fc = (m * v * v) / r;
+      const omega = v / r;
+      const period = (2 * Math.PI * r) / v;
+
+      return {
+        mass: m,
+        velocity: v,
+        radius: r,
+        centripetalAccel: Number(ac.toFixed(2)),
+        centripetalForce: Number(Fc.toFixed(2)),
+        angularVelocity: Number(omega.toFixed(2)),
+        periodSec: Number(period.toFixed(2)),
+      };
+    },
   },
   dataTable: {
     columns: [
-      { key: 'force', label: 'Centripetal Force', unit: 'N', precision: 2 },
+      { key: 'trialId', label: 'Trial', unit: '#', precision: 0 },
+      { key: 'mass', label: 'Mass m', unit: 'kg', precision: 2 },
+      { key: 'velocity', label: 'Velocity v', unit: 'm/s', precision: 1 },
+      { key: 'radius', label: 'Radius r', unit: 'm', precision: 1 },
+      { key: 'centripetalAccel', label: 'Acceleration a_c', unit: 'm/s²', precision: 2 },
+      { key: 'centripetalForce', label: 'Force F_c', unit: 'N', precision: 2 },
     ],
-    calculateRow: () => ({ force: 3.95 }),
+    calculateRow: (inputs: Record<string, any>) => {
+      const m = Number(inputs.mass || 2.0);
+      const v = Number(inputs.velocity || 5.0);
+      const r = Number(inputs.radius || 2.0);
+      const ac = (v * v) / r;
+      const Fc = (m * v * v) / r;
+      return {
+        mass: m,
+        velocity: v,
+        radius: r,
+        centripetalAccel: Number(ac.toFixed(2)),
+        centripetalForce: Number(Fc.toFixed(2)),
+      };
+    },
   },
   graph: {
-    xAxis: { label: 'Velocity v', unit: 'm/s', key: 'vLinear' },
-    yAxis: { label: 'Force F_c', unit: 'N', key: 'force' },
+    xAxis: { label: 'Velocity v', unit: 'm/s', key: 'velocity' },
+    yAxis: { label: 'Centripetal Force F_c', unit: 'N', key: 'centripetalForce' },
+    expectedFormula: 'F_c = \\frac{m v^2}{r}',
   },
-  mistakes: [],
+  mistakes: [
+    {
+      id: 'centripetal-myth',
+      name: 'Treating Centripetal Force as a Separate Force',
+      triggerCondition: 'inputs.isSeparateForce === true',
+      consequence: 'Misinterprets free-body diagram dynamics.',
+      aiExplanation: 'Centripetal force is not a standalone fundamental interaction; it is the required net inward force provided by friction, tension, gravity, or normal force.',
+    },
+  ],
   assessment: [
-    { id: 'c1', description: 'Verified quadratic relationship F ∝ v²', points: 100, verifyCondition: 'true' },
+    { id: 'c1', description: 'Verified non-linear quadratic relationship F_c ∝ v²', points: 25, verifyCondition: 'true' },
+    { id: 'c2', description: 'Verified direct linear relationship F_c ∝ m', points: 25, verifyCondition: 'true' },
+    { id: 'c3', description: 'Verified inverse relationship F_c ∝ 1/r', points: 25, verifyCondition: 'true' },
+    { id: 'c4', description: 'Completed centripetal force prediction challenge', points: 25, verifyCondition: 'true' },
   ],
   freeMode: defaultFreeMode,
   researchMode: defaultResearchMode,
   smartboardTrigger: {
-    detectedLaTeX: ['F = \\frac{m v^2}{r}', 'a_c = \\frac{v^2}{r}'],
-    conceptKeywords: ['centripetal', 'circular motion', 'angular velocity', 'radius', 'orbit'],
+    detectedLaTeX: ['F_c = \\frac{m v^2}{r}', 'a_c = \\frac{v^2}{r}', 'F_c = m a_c', 'F_c = m \\omega^2 r'],
+    conceptKeywords: ['centripetal force', 'centripetal acceleration', 'circular motion', 'tangential velocity', 'radius', 'orbit'],
   },
 };
 

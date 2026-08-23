@@ -6,13 +6,39 @@ export type ToolType =
   | 'text'
   | 'equation'
   | 'eraser'
+  | 'pixel-eraser'
+  | 'vector-eraser'
+  | 'lasso'
   | 'hand'
   | 'zoom-in'
   | 'zoom-out';
 
-export type ShapeSubtype = 'circle' | 'rectangle' | 'square' | 'triangle' | 'line' | 'arrow';
+export type ShapeSubtype =
+  | 'circle'
+  | 'rectangle'
+  | 'square'
+  | 'triangle'
+  | 'line'
+  | 'arrow'
+  | 'cube'
+  | 'sphere'
+  | 'cylinder'
+  | 'cone';
 
-export type ObjectType = 'stroke' | 'shape' | 'text' | 'equation' | 'ai-generated' | 'simulation';
+export type ObjectType =
+  | 'stroke'
+  | 'handwriting'
+  | 'equation'
+  | 'text'
+  | 'shape'
+  | 'shape2D'
+  | 'graph'
+  | 'model3D'
+  | 'image'
+  | 'annotation'
+  | 'diagram'
+  | 'ai-generated'
+  | 'simulation';
 
 export interface BoundingBox {
   x: number;
@@ -31,6 +57,48 @@ export interface Point {
   twist?: number;
   pointerType?: 'pen' | 'touch' | 'mouse';
   velocity?: number;
+}
+
+export interface ObjectRelationship {
+  targetId: string;
+  relationType: 'controls' | 'derived_from' | 'annotates' | 'grouped_with';
+}
+
+export interface BoardObjectMetadata {
+  authorId?: string;
+  isLocked: boolean;
+  isHidden: boolean;
+  tags: string[];
+}
+
+export interface BoardObject {
+  id: string;
+  type: ObjectType;
+  position: { x: number; y: number; zIndex: number };
+  dimensions: { width: number; height: number };
+  rotation: number;
+  content: {
+    rawStrokes?: Array<{ points: Array<[number, number, number, number]> }>;
+    rawLatex?: string;
+    ast?: any;
+    sourceStrokeIds?: string[];
+    shapeKind?: 'circle' | 'triangle' | 'polygon' | 'rectangle' | 'square' | 'line' | 'cube' | 'sphere' | 'cylinder' | 'cone';
+    vertices?: Point[];
+    parameters?: Record<string, number>;
+    linkedEquationId?: string;
+    rangeX?: [number, number];
+    rangeY?: [number, number];
+    resolution?: number;
+    geometryType?: string;
+    rotation3D?: [number, number, number];
+    text?: string;
+  };
+  metadata: BoardObjectMetadata;
+  confidence: number;
+  source: 'manual_drawing' | 'ocr_recognition' | 'ai_generated' | 'imported_asset';
+  relationships: ObjectRelationship[];
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface CanvasObject {
@@ -66,7 +134,7 @@ export interface DetectionResult {
   confidence: number;
   boundingBox: BoundingBox;
   mathFormula?: string;
-  suggestedActions: ('Convert' | 'Explain' | 'Visualize' | 'Simulate' | 'Quiz' | 'Open Virtual Lab')[];
+  suggestedActions: ('Convert' | 'Explain' | 'Visualize' | 'Simulate' | 'Quiz' | 'Open Virtual Lab' | 'Plot Graph' | 'Convert 3D')[];
   simulationType?: SimulationId;
   recognitionResult?: any;
 }

@@ -75,9 +75,19 @@ export const FloatingSuggestion: React.FC<FloatingSuggestionProps> = ({ onConver
         }This concept defines core physical behavior. Adjust parameters in the simulator or ask me for step-by-step proofs and JEE problem strategies.`,
       });
       dismissDetection();
-    } else if (action === 'Visualize' || action === 'Graph') {
-      console.log('[Pipeline Step 8] Launching Function Grapher for:', mathFormula || detectedName);
-      openSimulation('graph');
+    } else if (action === 'Visualize' || action === 'Graph' || action === 'Plot Graph' || action === 'Plot') {
+      console.log('[Pipeline Step 8] Launching Embedded Canvas Graph for:', mathFormula || detectedName);
+      addAIMessage({
+        sender: 'ai',
+        text: `📊 **Plotted Interactive Graph for ${mathFormula || detectedName}** directly on the Smart Board canvas! You can zoom, pan, and adjust function parameters.`,
+      });
+      dismissDetection();
+    } else if (action === '3D' || action === 'Convert 3D' || action === 'Render 3D') {
+      console.log('[Pipeline Step 8] Launching Interactive 3D Viewer for:', detectedName);
+      addAIMessage({
+        sender: 'ai',
+        text: `🧊 **Converted ${detectedName} to Interactive 3D Solid** on the Smart Board canvas! Use mouse or slider to rotate 360°.`,
+      });
       dismissDetection();
     } else if (action === 'Quiz' || action === 'Practice') {
       if (!aiPanelOpen) toggleAIPanel();

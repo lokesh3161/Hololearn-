@@ -182,7 +182,7 @@ export const VirtualLabShell: React.FC<VirtualLabShellProps> = ({
     <div
       ref={containerRef}
       className={`${
-        isFullscreen ? 'fixed inset-0 z-[100]' : 'relative w-full h-full'
+        isFullscreen ? 'fixed inset-0 z-[100]' : 'relative w-full h-[100dvh] max-h-[100dvh]'
       } flex flex-col bg-black text-white font-sans overflow-hidden select-none ${className}`}
     >
       {/* Immersive Fullscreen Top Header (Visible ONLY when in Fullscreen Mode) */}
@@ -223,7 +223,7 @@ export const VirtualLabShell: React.FC<VirtualLabShellProps> = ({
         {/* Universal Annotation Canvas Overlay */}
         {enableAnnotation && (
           <AnnotationCanvas
-            mode={isFullscreen ? mode : 'interact'}
+            mode={mode}
             strokes={strokes}
             color={color}
             strokeWidth={strokeWidth}
@@ -235,7 +235,7 @@ export const VirtualLabShell: React.FC<VirtualLabShellProps> = ({
           />
         )}
 
-        {/* Floating Progressive Disclosure Toolbar (Fullscreen Only) */}
+        {/* Floating Progressive Disclosure Toolbar */}
         {enableAnnotation && (
           <LabToolbar
             isFullscreen={isFullscreen}

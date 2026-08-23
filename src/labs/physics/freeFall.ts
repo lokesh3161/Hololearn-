@@ -4,75 +4,90 @@ export const freeFallConfig: ExperimentConfig = {
   id: 'free-fall',
   title: 'Free Fall Motion & Gravitational Acceleration g',
   subject: 'physics',
-  objective: 'Measure time of fall across varying drop heights h = ½gt² to determine acceleration due to gravity g.',
+  objective: 'Investigate vertical free-fall motion, measure fall time t across release heights h = ½gt², and experimentally determine gravitational acceleration g via mathematical formula and linear regression slope analysis.',
   apparatus: [
-    { id: 'electromagnet', name: 'Electromagnet Ball Release', specs: '12V solenoid hold-and-release mechanism', instructions: 'Align release pin at height h mark.' },
-    { id: 'ball', name: 'Precision Steel Sphere', specs: 'Mass = 28.0g, diameter = 18.0mm', instructions: 'Attach to electromagnet tip.' },
-    { id: 'trapdoor', name: 'Electronic Sensor Trapdoor', specs: 'Micro-switch landing plate', instructions: 'Position directly below release solenoid.' },
-    { id: 'timer', name: 'Millisecond Electronic Timer', specs: '0.001s resolution (1ms accuracy)', instructions: 'Timer starts automatically on release and stops on trapdoor impact.' },
-    { id: 'ruler', name: 'Vertical Plumb Rule', specs: '2.0m height scale, 1mm markings', instructions: 'Measure distance from bottom of ball to trapdoor.' },
+    { id: 'electromagnet', name: 'Electromagnetic Release Mechanism', specs: '12V solenoid hold-and-release with microsecond pulse trigger', instructions: 'Secure release pin at desired height h mark on vertical scale.' },
+    { id: 'ball', name: 'Precision Spherical Test Objects', specs: 'Steel (28g, 18mm), Aluminum (10g, 18mm), Heavy Alloy (100g, 18mm)', instructions: 'Attach chosen object to electromagnet tip.' },
+    { id: 'photogates', name: 'Dual Photogate / Motion Sensors', specs: 'Infrared light-beam sensors with 0.0001s timing accuracy', instructions: 'Position upper sensor at release point and lower sensor at drop height h.' },
+    { id: 'timer', name: 'Digital Photogate & Trapdoor Timer', specs: '0.001s resolution (1ms precision) with dual memory buffer', instructions: 'Records t₁ on photogate A trigger and t₂ on photogate B / impact pad trigger.' },
+    { id: 'ruler', name: 'Vertical Measurement Column', specs: '2.00m to 20.00m modular height scale with 1mm laser markings', instructions: 'Align height scale vertically using plumb line.' },
+    { id: 'impact', name: 'Cushioned Electronic Impact Pad', specs: 'Piezo-electric pressure plate landing sensor', instructions: 'Place directly beneath vertical axis of release solenoid.' },
   ],
   procedure: [
-    { stepNumber: 1, instruction: 'Set release electromagnet height h to 0.40 m above trapdoor.', expectedAction: 'Align height scale accurately.' },
-    { stepNumber: 2, instruction: 'Attach steel sphere to electromagnet and reset electronic timer to 0.000 s.', expectedAction: 'Zero timer display.' },
-    { stepNumber: 3, instruction: 'Trigger solenoid release; record fall time t from timer display.', expectedAction: 'Record t in seconds.' },
-    { stepNumber: 4, instruction: 'Perform 3 trial drops for h = 0.40m and compute mean time t_mean.', expectedAction: 'Average t1, t2, t3.' },
-    { stepNumber: 5, instruction: 'Repeat measurement for drop heights h = 0.60m, 0.80m, 1.00m, 1.20m, and 1.40m.', expectedAction: 'Build data table.' },
-    { stepNumber: 6, instruction: 'Calculate t² in s² for each mean fall time.', expectedAction: 'Square average fall time.' },
-    { stepNumber: 7, instruction: 'Plot height h (m) on y-axis vs t² (s²) on x-axis.', expectedAction: 'Fit straight line through origin.' },
-    { stepNumber: 8, instruction: 'Determine g = 2 × slope.', expectedAction: 'Compute g in m/s².' },
+    { stepNumber: 1, instruction: 'Select release height h (e.g. 10.00 m) on the vertical column.', expectedAction: 'Set release height.' },
+    { stepNumber: 2, instruction: 'Verify initial velocity v₀ is set to 0.00 m/s for ideal free fall.', expectedAction: 'Set v₀ = 0.' },
+    { stepNumber: 3, instruction: 'Click ARM SENSOR to energize electromagnet and ready photogate timer.', expectedAction: 'Arm solenoid.' },
+    { stepNumber: 4, instruction: 'Click RELEASE to de-energize solenoid and release object from rest.', expectedAction: 'Release object.' },
+    { stepNumber: 5, instruction: 'Observe vertical motion and record measured fall time t from digital display.', expectedAction: 'Note fall time t.' },
+    { stepNumber: 6, instruction: 'Click RECORD TRIAL to store height h, fall time t, t², and experimental g.', expectedAction: 'Log data row.' },
+    { stepNumber: 7, instruction: 'Repeat measurement across at least 5 different release heights (e.g. 2.0m, 5.0m, 10.0m, 15.0m, 20.0m).', expectedAction: 'Collect 5 trial rows.' },
+    { stepNumber: 8, instruction: 'Navigate to GRAPH tab, plot Height h vs Time Squared t², and find best-fit slope.', expectedAction: 'Analyze slope.' },
+    { stepNumber: 9, instruction: 'Calculate experimental g = 2 × slope and evaluate percentage error relative to 9.80665 m/s².', expectedAction: 'Calculate g and % error.' },
+    { stepNumber: 10, instruction: 'Complete conceptual assessment questions and generate lab report.', expectedAction: 'Finalize experiment.' },
   ],
   stateEngine: {
-    constants: { gNominal: 9.81 },
+    constants: { gNominal: 9.80665 },
     calculateState: (inputs: Record<string, any>) => {
-      const heightM = Number(inputs.heightM || 1.0);
-      const initialVelocity = Number(inputs.initialVelocity || 0);
-      const isManualStopwatch = inputs.isManualStopwatch === true;
-      const g = 9.81;
+      const heightM = Number(inputs.heightM || 10.0);
+      const initialVelocity = Number(inputs.initialVelocity || 0.0);
+      const g = Number(inputs.g || 9.80665);
+      const sensorNoise = inputs.sensorNoise === true;
+      const airResistance = inputs.airResistance === true;
+      const massKg = Number(inputs.massKg || 0.028);
 
-      // Quadratic kinematic: h = v0*t + 0.5*g*t^2 => 0.5*g*t^2 + v0*t - h = 0
+      // Quadratic kinematic: 0.5*g*t^2 + v0*t - h = 0
       const a = 0.5 * g;
       const b = initialVelocity;
       const c = -heightM;
-      const idealT = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+      let idealT = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
 
-      const electronicNoise = (Math.random() - 0.5) * 0.002; // ±1ms timing precision
-      const humanReactionNoise = (Math.random() - 0.5) * 0.25; // ±125ms human stopwatch scatter
+      if (airResistance) {
+        // Simple drag approximation factor
+        const dragFactor = 1.0 + 0.08 / massKg;
+        idealT *= Math.sqrt(dragFactor);
+      }
 
-      const noise = isManualStopwatch ? humanReactionNoise : electronicNoise;
-      const measuredT = Math.max(0.01, idealT + noise);
+      const noise = sensorNoise ? (Math.random() - 0.5) * 0.008 : 0;
+      const measuredT = Math.max(0.001, idealT + noise);
       const tSquared = measuredT * measuredT;
+      const expG = (2 * heightM) / tSquared;
 
       return {
         heightM,
         initialVelocity,
-        isManualStopwatch,
+        g,
+        massKg,
         timeSeconds: Number(measuredT.toFixed(3)),
         tSquared: Number(tSquared.toFixed(3)),
         theoreticalT: Number(idealT.toFixed(3)),
+        experimentalG: Number(expG.toFixed(3)),
       };
     },
   },
   dataTable: {
     columns: [
+      { key: 'trialNum', label: 'Trial', unit: '', precision: 0 },
       { key: 'heightM', label: 'Height h', unit: 'm', precision: 2 },
-      { key: 't1', label: 't₁', unit: 's', precision: 3 },
-      { key: 't2', label: 't₂', unit: 's', precision: 3 },
-      { key: 't3', label: 't₃', unit: 's', precision: 3 },
-      { key: 'tMean', label: 'Mean t', unit: 's', precision: 3 },
+      { key: 'fallTime', label: 'Time t', unit: 's', precision: 3 },
       { key: 'tSquared', label: 't²', unit: 's²', precision: 3 },
+      { key: 'expG', label: 'Experimental g', unit: 'm/s²', precision: 3 },
+      { key: 'errorPercent', label: 'Error', unit: '%', precision: 2 },
     ],
     calculateRow: (inputs: Record<string, any>) => {
-      const heightM = Number(inputs.heightM || 1.0);
-      const g = 9.81;
-      const t = Math.sqrt((2.0 * heightM) / g);
+      const heightM = Number(inputs.heightM || 10.0);
+      const gRef = Number(inputs.g || 9.80665);
+      const noise = inputs.sensorNoise === true ? (Math.random() - 0.5) * 0.008 : 0;
+      const t = Math.sqrt((2.0 * heightM) / gRef) + noise;
+      const tSq = t * t;
+      const expG = (2.0 * heightM) / tSq;
+      const err = (Math.abs(expG - gRef) / gRef) * 100;
+
       return {
         heightM,
-        t1: Number((t + (Math.random() - 0.5) * 0.002).toFixed(3)),
-        t2: Number((t + (Math.random() - 0.5) * 0.002).toFixed(3)),
-        t3: Number((t + (Math.random() - 0.5) * 0.002).toFixed(3)),
-        tMean: Number(t.toFixed(3)),
-        tSquared: Number((t * t).toFixed(3)),
+        fallTime: Number(t.toFixed(3)),
+        tSquared: Number(tSq.toFixed(3)),
+        expG: Number(expG.toFixed(3)),
+        errorPercent: Number(err.toFixed(2)),
       };
     },
   },
@@ -80,7 +95,7 @@ export const freeFallConfig: ExperimentConfig = {
     xAxis: { label: 'Time Squared t²', unit: 's²', key: 'tSquared' },
     yAxis: { label: 'Height h', unit: 'm', key: 'heightM' },
     expectedSlopeKey: 'g/2',
-    expectedSlopeValue: 9.81 / 2.0,
+    expectedSlopeValue: 9.80665 / 2.0,
     expectedFormula: 'h = (g / 2) * t^2',
   },
   mistakes: [
@@ -88,44 +103,45 @@ export const freeFallConfig: ExperimentConfig = {
       id: 'initial-push',
       name: 'Imparting Initial Downward Velocity (v₀ > 0)',
       triggerCondition: 'inputs.initialVelocity > 0',
-      consequence: 'Ball travels faster than free fall under gravity alone; measured fall times systematically short.',
-      aiExplanation: 'Ball must be released smoothly from rest (v₀ = 0) by solenoid de-energization to measure pure gravitational acceleration.',
+      consequence: 'Object reaches sensors faster than pure free fall; measured fall time is artificially short.',
+      aiExplanation: 'Ball must be released smoothly from rest (v₀ = 0 m/s) to isolate gravitational acceleration.',
     },
     {
       id: 'manual-reaction-error',
-      name: 'Using Hand-operated Stopwatch instead of Electronic Timer',
+      name: 'Using Manual Timing with Human Delay',
       triggerCondition: 'inputs.isManualStopwatch === true',
-      consequence: 'Human reaction time error (±0.15s) severely corrupts small millisecond fall intervals.',
-      aiExplanation: 'Fall times under 1 second require millisecond electronic gate timers because human reaction delay (~200ms) introduces excessive scatter.',
+      consequence: 'Human reaction time (±0.15s) severely corrupts small fall time measurements.',
+      aiExplanation: 'Sub-second free fall intervals require electronic photogates with sub-millisecond precision.',
     },
     {
-      id: 'parallax-height-error',
-      name: 'Parallax Height Measurement Error',
-      triggerCondition: 'inputs.parallaxOffset !== 0',
-      consequence: 'Height scale misread by 1-2cm due to off-axis viewing angle.',
-      aiExplanation: 'Align eye level perpendicular to vertical scale when taking height readings from release pin to trapdoor surface.',
+      id: 'air-resistance-assumption',
+      name: 'Ignoring Drag in High Air Density',
+      triggerCondition: 'inputs.airResistance === true',
+      consequence: 'Air drag opposes gravity, reducing acceleration and causing non-ideal quadratic scaling.',
+      aiExplanation: 'Ideal free fall assumes vacuum conditions where gravity is the sole acting force.',
     },
   ],
   assessment: [
-    { id: 'f1', description: 'Used electronic gate timer for sub-millisecond precision', points: 15, verifyCondition: 'isManualStopwatch === false' },
-    { id: 'f2', description: 'Recorded 3 trial drops per height to calculate mean fall time', points: 20, verifyCondition: 'hasThreeTrials === true' },
-    { id: 'f3', description: 'Tested across minimum of 5 distinct drop heights', points: 20, verifyCondition: 'data.length >= 5' },
-    { id: 'f4', description: 'Calculated t² accurately for all heights', points: 15, verifyCondition: 'verifyTSquared(data)' },
-    { id: 'f5', description: 'Plotted h vs t² graph and calculated slope', points: 15, verifyCondition: 'graphPlotted === true' },
-    { id: 'f6', description: 'Calculated g = 9.81 m/s² within ±3% experimental uncertainty', points: 15, verifyCondition: 'abs(calculatedG - 9.81) < 0.3' },
+    { id: 'f1', description: 'Armed and released object cleanly from rest (v₀ = 0 m/s)', points: 15, verifyCondition: 'initialVelocity === 0' },
+    { id: 'f2', description: 'Recorded trial data across at least 5 distinct release heights', points: 20, verifyCondition: 'data.length >= 5' },
+    { id: 'f3', description: 'Calculated t² accurately for all trials', points: 15, verifyCondition: 'verifyTSquared(data)' },
+    { id: 'f4', description: 'Plotted Height h vs t² graph and identified best-fit slope', points: 20, verifyCondition: 'graphPlotted === true' },
+    { id: 'f5', description: 'Determined experimental g from slope (g = 2 × slope) within ±3% uncertainty', points: 15, verifyCondition: 'abs(calculatedG - 9.80665) < 0.3' },
+    { id: 'f6', description: 'Tested planet comparison or mass independence principle', points: 15, verifyCondition: 'planetTested === true' },
   ],
   freeMode: {
-    objective: 'Determine gravitational acceleration g using stroboscopic photograph analysis or photogate drop tower.',
-    availableApparatus: ['Drop tower', 'Photogates A & B', 'Steel/aluminum balls', 'Stroboscopic camera', 'Precision ruler'],
+    objective: 'Explore free-fall behavior under custom gravity environments (Moon, Mars, Jupiter), vary mass, and test air resistance.',
+    availableApparatus: ['Vertical Drop Column', 'Photogate Sensors', 'Steel, Aluminum & Alloy Spheres', 'Vacuum Chamber Toggle', 'Digital Timer'],
     aiGuidanceStyle: 'safety_and_hints_only',
   },
   researchMode: {
-    scientificQuestion: 'Investigate whether air drag affects terminal velocity of falling spheres of varying diameters.',
-    constraints: { timeMinutes: 25, budget: 90, safetyLevel: 'Low Risk' },
-    requiredIdentifications: ['Independent variable: Sphere diameter / cross-section', 'Dependent variable: Fall time / Acceleration', 'Control variable: Sphere density / Drop height'],
+    scientificQuestion: 'How does air resistance modify the linear relationship between drop height h and fall time squared t²?',
+    constraints: { timeMinutes: 25, budget: 100, safetyLevel: 'Low Risk' },
+    requiredIdentifications: ['Independent variable: Height h / Air density', 'Dependent variable: Fall time t', 'Control variable: Sphere diameter / Solenoid trigger'],
   },
   smartboardTrigger: {
-    detectedLaTeX: ['h = \\frac{1}{2}gt^2', 't = \\sqrt{\\frac{2h}{g}}', 'g = \\frac{2h}{t^2}', 'v^2 = 2gh'],
-    conceptKeywords: ['free fall', 'gravity', 'acceleration due to gravity', 'falling body', 'kinematics'],
+    detectedLaTeX: ['h = \\frac{1}{2}gt^2', 't = \\sqrt{\\frac{2h}{g}}', 'g = \\frac{2h}{t^2}', 'v = -gt', 'v^2 = 2gh'],
+    conceptKeywords: ['free fall', 'gravity', 'gravitational acceleration', 'falling body', 'kinematics', 'photogate'],
   },
 };
+

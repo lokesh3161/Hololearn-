@@ -4,6 +4,5 @@ export * from './StrokeAnalyzer';
 export * from './GeometryClassifier';
 export * from './ConfidenceCalculator';
 export * from './ShapeConverter';
-export * from './ShapeRecognitionEngine';
+export { ShapeRecognitionEngine, type DetectedShape } from './ShapeRecognitionEngine';
 export * from './LongPressDetector';
-export * from './classifier.test';

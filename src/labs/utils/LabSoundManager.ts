@@ -43,6 +43,10 @@ export class LabSoundManager {
     labSound.playDataRecorded();
   }
 
+  public static playClick() {
+    labSound.playPause();
+  }
+
   public static playLaunch() {
     labSound.playLaunch();
   }
@@ -57,6 +61,42 @@ export class LabSoundManager {
 
   public static setSoundEnabled(enabled: boolean) {
     labSound.setEnabled(enabled);
+  }
+
+  public playClick() {
+    this.playPause();
+  }
+
+  public playGlassTouch() {
+    this.playPause();
+  }
+
+  public playBeaker() {
+    this.playPause();
+  }
+
+  public playPouring() {
+    this.playScreenSlide();
+  }
+
+  public playStirring() {
+    this.playFlight();
+  }
+
+  public playError() {
+    this.playInvalidInput();
+  }
+
+  public playSuccess() {
+    this.playDataRecorded();
+  }
+
+  public playRelease() {
+    this.playLaunch();
+  }
+
+  public playImpact() {
+    this.playLanding();
   }
 
   public playLaunch() {

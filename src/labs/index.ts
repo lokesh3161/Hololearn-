@@ -28,10 +28,60 @@ import { winklerDissolvedOxygenConfig } from './chemistry/winklerDissolvedOxygen
 import { leadAcidStrengthConfig } from './chemistry/leadAcidStrength';
 import { ferrousDichromateConfig } from './chemistry/ferrousDichromate';
 
+import { phWaterSoilConfig } from './chemistry/phWaterSoil';
+import { phenolFormaldehydeConfig } from './chemistry/phenolFormaldehyde';
+import { newtonsRingsConfig } from './chemistry/newtonsRings';
+import { careyFosterBridgeConfig } from './chemistry/careyFosterBridge';
+import { dielectricConstantConfig } from './chemistry/dielectricConstant';
+import { torsionalPendulumConfig } from './physics/torsionalPendulum';
+import { diffractionGratingConfig } from './physics/diffractionGrating';
+
 export * from './types';
 export * from './smartboardTriggers';
 
 export const EXPERIMENT_REGISTRY: Record<string, ExperimentConfig> = {
+  // Experiment 11: Determination of Laser Wavelength by Diffraction Grating
+  'diffraction-grating-laser': diffractionGratingConfig,
+  'laser-wavelength-diffraction': diffractionGratingConfig,
+  'diffraction-grating': diffractionGratingConfig,
+  'laser-diffraction': diffractionGratingConfig,
+
+  // Experiment 10: Determination of Rigidity Modulus Using Torsional Pendulum
+  'torsional-pendulum-rigidity': torsionalPendulumConfig,
+  'torsional-pendulum': torsionalPendulumConfig,
+  'rigidity-modulus': torsionalPendulumConfig,
+  'shear-modulus-wire': torsionalPendulumConfig,
+
+  // Experiment 09: Determination of Dielectric Constant Using Charging & Discharging
+  'dielectric-constant-rc': dielectricConstantConfig,
+  'dielectric-constant': dielectricConstantConfig,
+  'rc-charging-discharging': dielectricConstantConfig,
+  'dielectric-permittivity': dielectricConstantConfig,
+
+  // Experiment 08: Verification of Series & Parallel Resistance Laws by Carey Foster Bridge
+  'carey-foster-bridge': careyFosterBridgeConfig,
+  'carey-foster': careyFosterBridgeConfig,
+  'series-parallel-resistances': careyFosterBridgeConfig,
+  'resistance-combination-bridge': careyFosterBridgeConfig,
+
+  // Experiment 07: Determination of Radius of Curvature by Newton's Rings
+  'newtons-rings': newtonsRingsConfig,
+  'newtons-rings-radius': newtonsRingsConfig,
+  'newtons-rings-plano-convex': newtonsRingsConfig,
+  'radius-of-curvature-lens': newtonsRingsConfig,
+
+  // Experiment 06: Preparation of Phenol-Formaldehyde Polymer
+  'phenol-formaldehyde-polymer': phenolFormaldehydeConfig,
+  'phenol-formaldehyde': phenolFormaldehydeConfig,
+  'bakelite-lab': phenolFormaldehydeConfig,
+  'polymerization-lab': phenolFormaldehydeConfig,
+
+  // Experiment 05: pH of Water and Soil Samples
+  'ph-water-soil': phWaterSoilConfig,
+  'ph-water-soil-samples': phWaterSoilConfig,
+  'water-soil-ph': phWaterSoilConfig,
+  'ph-meter-calibration': phWaterSoilConfig,
+
   // 10 Physics Mechanics Labs
   'newtons-second-law': newtonsLawConfig,
   'newtons-law': newtonsLawConfig,
@@ -54,6 +104,8 @@ export const EXPERIMENT_REGISTRY: Record<string, ExperimentConfig> = {
   'simple-pendulum': simplePendulumConfig,
   'pendulum-lab': simplePendulumConfig,
   'free-fall': freeFallConfig,
+  'free-fall-motion': freeFallConfig,
+  'gravitational-acceleration': freeFallConfig,
   'ohms-law': ohmsLawConfig,
   'specific-heat': specificHeatConfig,
 

@@ -24,6 +24,13 @@ import { WaterHardnessEdtaLab } from './experiments/WaterHardnessEdtaLab';
 import { WinklerDissolvedOxygenLab } from './experiments/WinklerDissolvedOxygenLab';
 import { LeadAcidStrengthLab } from './experiments/LeadAcidStrengthLab';
 import { FerrousIronDichromateLab } from './experiments/FerrousIronDichromateLab';
+import { PHWaterSoilLab } from './experiments/PHWaterSoilLab';
+import { PhenolFormaldehydeLab } from './experiments/PhenolFormaldehydeLab';
+import { NewtonsRingsLab } from './experiments/NewtonsRingsLab';
+import { CareyFosterBridgeLab } from './experiments/CareyFosterBridgeLab';
+import { DielectricConstantLab } from './experiments/DielectricConstantLab';
+import { TorsionalPendulumLab } from './experiments/TorsionalPendulumLab';
+import { DiffractionGratingLab } from './experiments/DiffractionGratingLab';
 import { ComingSoonLab } from './experiments/ComingSoonLab';
 
 export interface ExperimentRendererProps {
@@ -36,6 +43,49 @@ export interface ExperimentRendererProps {
 }
 
 const experimentRendererRegistry: Record<string, React.ComponentType<any>> = {
+  // Experiment 11: Determination of Laser Wavelength by Diffraction Grating
+  'diffraction-grating-laser': DiffractionGratingLab,
+  'laser-wavelength-diffraction': DiffractionGratingLab,
+  'diffraction-grating': DiffractionGratingLab,
+  'laser-diffraction': DiffractionGratingLab,
+
+  // Experiment 10: Determination of Rigidity Modulus Using Torsional Pendulum
+  'torsional-pendulum-rigidity': TorsionalPendulumLab,
+  'torsional-pendulum': TorsionalPendulumLab,
+  'rigidity-modulus': TorsionalPendulumLab,
+  'shear-modulus-wire': TorsionalPendulumLab,
+
+  // Experiment 09: Determination of Dielectric Constant Using Charging & Discharging
+  'dielectric-constant-rc': DielectricConstantLab,
+  'dielectric-constant': DielectricConstantLab,
+  'rc-charging-discharging': DielectricConstantLab,
+  'dielectric-permittivity': DielectricConstantLab,
+
+  // Experiment 08: Verification of Series & Parallel Resistance Laws by Carey Foster Bridge
+  'carey-foster-bridge': CareyFosterBridgeLab,
+  'carey-foster': CareyFosterBridgeLab,
+  'series-parallel-resistances': CareyFosterBridgeLab,
+  'resistance-combination-bridge': CareyFosterBridgeLab,
+
+  // Experiment 07: Determination of Radius of Curvature by Newton's Rings
+  // Experiment 07: Determination of Radius of Curvature by Newton's Rings
+  'newtons-rings': NewtonsRingsLab,
+  'newtons-rings-radius': NewtonsRingsLab,
+  'newtons-rings-plano-convex': NewtonsRingsLab,
+  'radius-of-curvature-lens': NewtonsRingsLab,
+
+  // Experiment 06: Preparation of Phenol-Formaldehyde Polymer
+  'phenol-formaldehyde-polymer': PhenolFormaldehydeLab,
+  'phenol-formaldehyde': PhenolFormaldehydeLab,
+  'bakelite-lab': PhenolFormaldehydeLab,
+  'polymerization-lab': PhenolFormaldehydeLab,
+
+  // Experiment 05: pH of Water and Soil Samples
+  'ph-water-soil': PHWaterSoilLab,
+  'ph-water-soil-samples': PHWaterSoilLab,
+  'water-soil-ph': PHWaterSoilLab,
+  'ph-meter-calibration': PHWaterSoilLab,
+
   // 10 Physics Mechanics Labs
   'newtons-second-law': NewtonsLawLab,
   'newtons-law': NewtonsLawLab,
@@ -64,6 +114,8 @@ const experimentRendererRegistry: Record<string, React.ComponentType<any>> = {
   'simple-pendulum': SimplePendulumLab,
   'pendulum-lab': SimplePendulumLab,
   'free-fall': FreeFallLab,
+  'free-fall-motion': FreeFallLab,
+  'gravitational-acceleration': FreeFallLab,
   'ohms-law': OhmsLawLab,
   'specific-heat': SpecificHeatLab,
 
