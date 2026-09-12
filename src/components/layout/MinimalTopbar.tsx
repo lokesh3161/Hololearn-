@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Maximize2, Minimize2, Grid, RotateCcw, RotateCw, Trash2, GraduationCap } from 'lucide-react';
+import { Maximize2, Minimize2, Grid, RotateCcw, RotateCw, Trash2, GraduationCap, Radio } from 'lucide-react';
 import { useBoardStore } from '../../store/boardStore';
 
 export const MinimalTopbar: React.FC = () => {
@@ -14,6 +14,8 @@ export const MinimalTopbar: React.FC = () => {
     redoStack,
     clearCanvas,
     pushHistory,
+    isStylusPanelOpen,
+    setStylusPanelOpen,
   } = useBoardStore();
 
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -38,8 +40,8 @@ export const MinimalTopbar: React.FC = () => {
 
   return (
     <div className="absolute top-3 left-4 right-4 z-30 pointer-events-none flex items-center justify-between select-none">
-      {/* Top Left: Subdued Branding & Mode */}
-      <div className="pointer-events-auto flex items-center gap-3 bg-[#0a0a0a]/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/10 shadow-lg">
+      {/* Top Left: Subdued Branding, Mode & Stylus Simulator Launcher */}
+      <div className="pointer-events-auto flex items-center gap-2.5 bg-[#0a0a0a]/90 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/10 shadow-lg">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
           <span className="font-semibold text-xs tracking-tight text-white font-sans">
@@ -60,6 +62,20 @@ export const MinimalTopbar: React.FC = () => {
         >
           <GraduationCap className="w-3.5 h-3.5 text-zinc-400" />
           <span className="capitalize">{mode} Mode</span>
+        </button>
+
+        {/* Smart Stylus Simulator Launcher Button */}
+        <button
+          onClick={() => setStylusPanelOpen(!isStylusPanelOpen)}
+          className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium transition-all border ${
+            isStylusPanelOpen
+              ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/40 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
+              : 'bg-white/5 hover:bg-white/10 text-zinc-300 border-white/5'
+          }`}
+          title="Open Digital Smart Stylus Simulator"
+        >
+          <Radio className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Stylus</span>
         </button>
       </div>
 

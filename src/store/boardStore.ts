@@ -46,6 +46,8 @@ interface BoardState {
   // Modals & Subsystems
   isEquationModalOpen: boolean;
   isShareModalOpen: boolean;
+  isStylusPanelOpen: boolean;
+  setStylusPanelOpen: (open: boolean) => void;
   isPeriodicTableOpen: boolean;
   setPeriodicTableOpen: (open: boolean) => void;
   isChemistryCalcOpen: boolean;
@@ -160,6 +162,8 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   toggleMinimizeSimulation: () => set((state) => ({ isSimulationMinimized: !state.isSimulationMinimized })),
   isEquationModalOpen: false,
   isShareModalOpen: false,
+  isStylusPanelOpen: false,
+  setStylusPanelOpen: (isStylusPanelOpen) => set({ isStylusPanelOpen }),
   isPeriodicTableOpen: false,
   setPeriodicTableOpen: (isPeriodicTableOpen) => set({ isPeriodicTableOpen }),
   isChemistryCalcOpen: false,
